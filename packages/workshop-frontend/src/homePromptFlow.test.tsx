@@ -20,13 +20,15 @@ const testState = vi.hoisted(() => {
   };
 });
 
+const toastManager = { add: testState.addToast };
+
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   useNavigate: () => testState.navigate,
 }));
 
 vi.mock("@cloudflare/kumo", () => ({
-  useKumoToastManager: () => ({ add: testState.addToast }),
+  useKumoToastManager: () => toastManager,
 }));
 
 vi.mock("./AuthContext", () => ({
@@ -48,15 +50,13 @@ vi.mock("./ChatInterface", () => ({
   },
 }));
 
-vi.mock("./components/MeshBackground", () => ({ default: () => null }));
-vi.mock("./components/AppShell/HomeTaskSuggestions", () => ({ default: () => null }));
 vi.mock("./useDocumentTitle", () => ({ useDocumentTitle: () => {} }));
 
-import { HomePageContent } from "./routes/index";
+import { AskBifanaPageContent } from "./routes/ask-bifana";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-describe("Home prompt route flow", () => {
+describe("Ask Bifana prompt route flow", () => {
   let container: HTMLDivElement | undefined;
   let root: Root | undefined;
 
@@ -73,14 +73,20 @@ describe("Home prompt route flow", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    await act(async () => root!.render(<HomePageContent prompt="Create a daily brief." />));
+    await act(async () => root!.render(<AskBifanaPageContent prompt="Create a daily brief." />));
 
     expect(container.querySelector<HTMLTextAreaElement>('[aria-label="Prompt"]')?.value).toBe(
       "Create a daily brief.",
     );
     expect(Math.max(...testState.seeds.map(({ nonce }) => nonce ?? 0))).toBe(1);
-    expect(testState.navigate).toHaveBeenCalledWith({ to: "/", search: {}, replace: true });
+    expect(testState.navigate).toHaveBeenCalledWith({
+      to: "/ask-bifana",
+      search: {},
+      replace: true,
+    });
     expect(testState.newGadget).not.toHaveBeenCalled();
-    expect(testState.draftStorageKeys).toContain("gadgets:composer-draft:v1:user-a:home");
+    expect(testState.draftStorageKeys).toContain(
+      "gadgets:composer-draft:v1:user-a:ask-bifana",
+    );
   });
 });

@@ -19,6 +19,12 @@ function initials(title: string | undefined): string {
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || t.slice(0, 2).toUpperCase()
 }
 
+function conversationTitle(title: string | undefined): string {
+  const trimmed = title?.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'untitled workspace') return 'Untitled chat'
+  return trimmed
+}
+
 function formatRelativeTime(date: Date): string {
   const diff = Date.now() - date.getTime()
   const minutes = Math.floor(diff / 60000)
@@ -49,6 +55,7 @@ function AppRow({
   onTogglePin: (gadget: GadgetMetadataWithTimestamps) => void
   onRename: (gadget: GadgetMetadataWithTimestamps, newTitle: string) => void
 }) {
+  const displayTitle = conversationTitle(gadget.title)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(gadget.title || '')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -104,7 +111,7 @@ function AppRow({
             />
           ) : (
             <h3 className="text-sm font-medium text-kumo-default truncate">
-              {gadget.title || 'Untitled Workspace'}
+              {displayTitle}
             </h3>
           )}
         </div>
@@ -237,7 +244,7 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
     try {
       if (deleteTarget.owner) {
         await authenticatedApi.dismissSharedGadget(deleteTarget.id)
-        toasts.add({ title: 'Workspace removed from list', variant: 'success' })
+        toasts.add({ title: 'Chat removed from list', variant: 'success' })
       } else {
         const overseer = await authenticatedApi.openGadget(deleteTarget.id)
         try {
@@ -245,12 +252,12 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
         } finally {
           overseer[Symbol.dispose]()
         }
-        toasts.add({ title: 'Workspace deleted', variant: 'success' })
+        toasts.add({ title: 'Chat deleted', variant: 'success' })
       }
       setGadgets(prev => prev.filter(g => g.id !== deleteTarget.id))
     } catch (err) {
       console.error('Failed to delete workspace:', err)
-      toasts.add({ title: 'Failed to delete workspace', variant: 'error' })
+      toasts.add({ title: 'Failed to delete chat', variant: 'error' })
     } finally {
       setIsDeleting(false)
       setDeleteTarget(null)
@@ -313,7 +320,7 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
     } catch (err) {
       console.error('Failed to rename workspace:', err)
       setGadgets(prev => prev.map(g => g.id === gadget.id ? { ...g, title: gadget.title } : g))
-      toasts.add({ title: 'Failed to rename workspace', variant: 'error' })
+      toasts.add({ title: 'Failed to rename chat', variant: 'error' })
     } finally {
       (await overseer)[Symbol.dispose]()
     }
@@ -334,11 +341,11 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
       {showHeader && (
         <div className="px-6 sm:px-10 lg:px-10 pt-10 lg:pt-10 mb-4">
           <h2 className="text-lg font-semibold text-kumo-default">
-            Your workspaces
+            Your chats
           </h2>
           {!loading && gadgets.length === 0 && !loadError && (
             <p className="mt-1 text-sm text-kumo-inactive">
-              You haven&apos;t created any workspaces yet
+              You haven&apos;t started any chats yet
             </p>
           )}
         </div>
@@ -356,7 +363,7 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search workspaces…"
+              placeholder="Search chats…"
               className="h-9 w-full rounded-lg border border-kumo-line bg-kumo-base pl-9 pr-4 text-[13px] tracking-[-0.25px] text-kumo-default placeholder:text-kumo-inactive transition-[border-color,box-shadow] duration-150 ease-out focus:border-kumo-ring focus:outline-none focus:ring-[3px] focus:ring-kumo-ring/15"
             />
           </div>
@@ -375,13 +382,13 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
           </>
         ) : loadError ? (
           <div className="text-center py-12 text-sm">
-            <p className="text-kumo-danger">Something went wrong loading your workspaces.</p>
+            <p className="text-kumo-danger">Something went wrong loading your chats.</p>
             <button onClick={loadGadgets} className="text-kumo-brand mt-1 underline">Try again</button>
           </div>
         ) : filtered.length === 0 ? (
           search ? (
             <div className="text-center py-12 text-kumo-inactive text-sm">
-              No workspaces found
+              No chats found
             </div>
           ) : (
             <FeaturedBlueprintsGallery />
@@ -406,11 +413,11 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         isDeleting={isDeleting}
-        title={deleteTarget?.owner ? 'Remove workspace' : 'Delete workspace'}
+        title={deleteTarget?.owner ? 'Remove chat' : 'Delete chat'}
         description={
           deleteTarget?.owner
-            ? `Remove "${deleteTarget?.title || 'Untitled Workspace'}" from your list? You can still access it via its link.`
-            : `Delete "${deleteTarget?.title || 'Untitled Workspace'}"? This cannot be undone.`
+            ? `Remove "${conversationTitle(deleteTarget?.title)}" from your list? You can still access it via its link.`
+            : `Delete "${conversationTitle(deleteTarget?.title)}"? This cannot be undone.`
         }
         confirmLabel={deleteTarget?.owner ? 'Remove' : 'Delete'}
         confirmingLabel={deleteTarget?.owner ? 'Removing...' : 'Deleting...'}
@@ -424,7 +431,7 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
       >
         <Dialog className="p-8" size="sm">
           <Dialog.Title className="text-lg font-semibold">
-            {infoTarget?.title || 'Untitled Workspace'}
+            {conversationTitle(infoTarget?.title)}
           </Dialog.Title>
           <div className="mt-4 flex flex-col gap-3 text-sm">
             <div className="flex justify-between">

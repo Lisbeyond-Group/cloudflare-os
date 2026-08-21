@@ -1,5 +1,15 @@
 export const MAX_GATEKEEPER_APP_PROMPT_LENGTH = 4_000;
 
+export const GATEKEEPER_APP_ROUTES = {
+  home: "/",
+  properties: "/properties",
+  "ask-bifana": "/ask-bifana",
+  workflows: "/workflows",
+  connections: "/connections",
+} as const;
+
+export type GatekeeperAppRoute = keyof typeof GATEKEEPER_APP_ROUTES;
+
 // A Durable Object ID string, which is what a workspace ID is.
 const WORKSPACE_ID_PATTERN = /^[0-9a-f]{64}$/;
 
@@ -31,4 +41,15 @@ export function normalizeGatekeeperAppPrompt(value: string): string {
     throw new RangeError("Gatekeeper app prompt is too long.");
   }
   return prompt;
+}
+
+/**
+ * Gatekeeper apps are sandboxed and may only request one of the explicitly supported internal
+ * destinations. They never supply an arbitrary path or external URL to the Workshop router.
+ */
+export function parseGatekeeperAppRoute(value: unknown): GatekeeperAppRoute {
+  if (typeof value !== "string" || !(value in GATEKEEPER_APP_ROUTES)) {
+    throw new TypeError("Invalid gatekeeper app route.");
+  }
+  return value as GatekeeperAppRoute;
 }

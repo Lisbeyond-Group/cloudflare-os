@@ -162,7 +162,7 @@ export function SidebarWorkspacesProvider({ children }: { children: ReactNode })
     } catch (err) {
       console.error('Failed to rename:', err)
       setGadgets((prev) => prev.map((x) => (x.id === g.id ? { ...x, title: g.title } : x)))
-      toasts.add({ title: 'Failed to rename workspace', variant: 'error' })
+      toasts.add({ title: 'Failed to rename chat', variant: 'error' })
     } finally {
       overseer[Symbol.dispose]()
     }
@@ -199,12 +199,12 @@ export function SidebarWorkspacesProvider({ children }: { children: ReactNode })
       }
       setGadgets((prev) => prev.filter((x) => x.id !== deleteTarget.id))
       toasts.add({
-        title: deleteTarget.owner ? 'Workspace removed' : 'Workspace deleted',
+        title: deleteTarget.owner ? 'Chat removed' : 'Chat deleted',
         variant: 'success',
       })
     } catch (err) {
       console.error('Failed to delete workspace:', err)
-      toasts.add({ title: 'Failed to delete workspace', variant: 'error' })
+      toasts.add({ title: 'Failed to delete chat', variant: 'error' })
     } finally {
       setIsDeleting(false)
       setDeleteTarget(null)
@@ -233,11 +233,11 @@ export function SidebarWorkspacesProvider({ children }: { children: ReactNode })
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         isDeleting={isDeleting}
-        title={deleteTarget?.owner ? 'Remove workspace' : 'Delete workspace'}
+        title={deleteTarget?.owner ? 'Remove chat' : 'Delete chat'}
         description={
           deleteTarget?.owner
-            ? `Remove "${deleteTarget?.title || 'Untitled workspace'}" from your list? You can still access it via its link.`
-            : `Delete "${deleteTarget?.title || 'Untitled workspace'}"? This cannot be undone.`
+            ? `Remove "${deleteTarget?.title || 'Untitled chat'}" from your list? You can still access it via its link.`
+            : `Delete "${deleteTarget?.title || 'Untitled chat'}"? This cannot be undone.`
         }
         confirmLabel={deleteTarget?.owner ? 'Remove' : 'Delete'}
         confirmingLabel={deleteTarget?.owner ? 'Removing...' : 'Deleting...'}
@@ -331,9 +331,9 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
 
   return (
     <div className="flex flex-col pb-3">
-      {/* Favorites */}
+      {/* Saved conversations */}
       <SidebarSection
-        label="Favorites"
+        label="Saved chats"
         count={favorites.length}
         open={favOpen}
         onToggle={() => setFavOpen((o) => !o)}
@@ -341,7 +341,7 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
       >
         {favorites.length === 0 ? (
           <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-kumo-inactive">
-            Favorite a workspace to keep it here.
+            Save a conversation to keep it here.
           </p>
         ) : (
           <div className="flex flex-col">
@@ -359,9 +359,9 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
         )}
       </SidebarSection>
 
-      {/* Recent workspaces — no count here; the "Show all (N)" link already carries it. */}
+      {/* Recent conversations — no count here; the "Show all (N)" link already carries it. */}
       <SidebarSection
-        label="Recent workspaces"
+        label="Recent chats"
         open={recentOpen}
         onToggle={() => setRecentOpen((o) => !o)}
       >
@@ -373,7 +373,7 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
           </div>
         ) : recent.length === 0 ? (
           <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-kumo-inactive">
-            {search ? 'No matches.' : 'No workspaces yet.'}
+            {search ? 'No matches.' : 'No conversations yet.'}
           </p>
         ) : (
           <>

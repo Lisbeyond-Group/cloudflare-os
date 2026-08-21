@@ -14,8 +14,11 @@ import { useServerConfig } from './ServerConfigContext'
 import { forwardTrustedFrameError } from './errorReporting'
 import { useAuthenticatedApi } from './AuthContext'
 import {
+  GATEKEEPER_APP_ROUTES,
   normalizeGatekeeperAppPrompt,
+  parseGatekeeperAppRoute,
   parseGatekeeperAppWorkspaceTarget,
+  type GatekeeperAppRoute,
   type GatekeeperAppWorkspaceTarget,
 } from './gatekeeperAppNavigation'
 
@@ -35,6 +38,7 @@ type OpenTarget = (target: GatekeeperAppWorkspaceTarget) => void
 // can no longer see. Deliberately a lookup, not an enumeration: the app learns nothing new.
 type ResolveWorkspaceTitles = (ids: string[]) => Promise<(string | null)[]>
 type OpenPrompt = (prompt: string) => void
+type OpenAppRoute = (route: GatekeeperAppRoute) => void
 
 type OverlayState = 'full' | null
 
@@ -81,6 +85,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #present: PresentController
   readonly #openTarget: OpenTarget
   readonly #openPrompt: OpenPrompt
+  readonly #appRoute: string | null
+  readonly #openAppRoute: OpenAppRoute
   readonly #resolveWorkspaceTitles: ResolveWorkspaceTitles
   #presenting = false
   #theme: GatekeeperAppTheme
@@ -96,6 +102,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     theme: GatekeeperAppTheme,
     openTarget: OpenTarget,
     openPrompt: OpenPrompt,
+    appRoute: string | null,
+    openAppRoute: OpenAppRoute,
     resolveWorkspaceTitles: ResolveWorkspaceTitles,
   ) {
     super()
@@ -112,6 +120,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#present = present
     this.#openTarget = openTarget
     this.#openPrompt = openPrompt
+    this.#appRoute = appRoute
+    this.#openAppRoute = openAppRoute
     this.#resolveWorkspaceTitles = resolveWorkspaceTitles
   }
 
@@ -136,6 +146,14 @@ class GatekeeperAppHostImpl extends RpcTarget {
 
   openPrompt(prompt: string): void {
     this.#openPrompt(normalizeGatekeeperAppPrompt(prompt))
+  }
+
+  getAppRoute(): string | null {
+    return this.#appRoute
+  }
+
+  openAppRoute(route: unknown): void {
+    this.#openAppRoute(parseGatekeeperAppRoute(route))
   }
 
   // The app calls this once to learn the current theme and register a receiver for later changes.
@@ -213,9 +231,10 @@ class GatekeeperAppHostImpl extends RpcTarget {
  * talks to the gatekeeper only through the `ui` capability carried over the MessagePort RPC session.
  * The iframe fills its parent container.
  */
-export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
+export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appRoute = null }: {
   frame: GatekeeperUiFrame,
   gatekeeperVendorId: string,
+  appRoute?: string | null,
 }) {
   const navigate = useNavigate()
   const { authenticatedApi } = useAuthenticatedApi()
@@ -289,7 +308,10 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
     return ids.map((id) => titles.get(id) ?? null)
   }, [authenticatedApi])
   const openPrompt = useCallback<OpenPrompt>((prompt) => {
-    navigate({ to: '/', search: { prompt } })
+    navigate({ to: '/ask-bifana', search: { prompt } })
+  }, [navigate])
+  const openAppRoute = useCallback<OpenAppRoute>((route) => {
+    navigate({ to: GATEKEEPER_APP_ROUTES[route] })
   }, [navigate])
   // The gatekeeper capability is `any`: its method shape is gatekeeper-defined and opaque to us.
   const capabilityRef = useRef<any>(null)
@@ -321,6 +343,8 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
         themeRef.current,
         openTarget,
         openPrompt,
+        appRoute,
+        openAppRoute,
         resolveWorkspaceTitles,
       )
       hostRef.current = host
@@ -354,7 +378,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
     }
     // Re-establish the session if either the HTML or the `ui` capability changes, so a new frame
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
-  }, [frame.iframeHtml, frame.ui, gatekeeperVendorId, openPrompt, openTarget,
+  }, [appRoute, frame.iframeHtml, frame.ui, gatekeeperVendorId, openAppRoute, openPrompt, openTarget,
       present, resolveWorkspaceTitles, setOverlayPhase])
 
   return (

@@ -49,6 +49,8 @@ interface TestHost extends RpcTarget {
   openWorkspace(workspaceId: string, gadgetId?: number): Promise<void>;
   resolveWorkspaceTitles(ids: string[]): Promise<(string | null)[]>;
   openPrompt(prompt: string): Promise<void>;
+  getAppRoute(): Promise<string | null>;
+  openAppRoute(route: string): Promise<void>;
 }
 
 class EmptyUi extends RpcTarget {}
@@ -64,6 +66,7 @@ describe("SandboxedGatekeeperApp navigation", () => {
 
   beforeEach(() => {
     listGadgets.mockClear();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
 
   afterEach(async () => {
@@ -79,17 +82,34 @@ describe("SandboxedGatekeeperApp navigation", () => {
       ui: new RpcStub(new EmptyUi()),
     } as unknown as GatekeeperUiFrame;
     const rootRoute = createRootRoute({
-      component: () => <SandboxedGatekeeperApp frame={frame} gatekeeperVendorId="scheduler" />,
+      component: () => <SandboxedGatekeeperApp
+        frame={frame}
+        gatekeeperVendorId="scheduler"
+        appRoute="properties"
+      />,
     });
     const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/" });
     const gadgetRoute = createRoute({
       getParentRoute: () => rootRoute,
       path: "/workspace/$id",
     });
+    const askBifanaRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/ask-bifana",
+    });
+    const connectionsRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/connections",
+    });
     const history = createMemoryHistory({ initialEntries: ["/"] });
     const router = createRouter({
       history,
-      routeTree: rootRoute.addChildren([indexRoute, gadgetRoute]),
+      routeTree: rootRoute.addChildren([
+        indexRoute,
+        gadgetRoute,
+        askBifanaRoute,
+        connectionsRoute,
+      ]),
     });
 
     container = document.createElement("div");
@@ -115,6 +135,7 @@ describe("SandboxedGatekeeperApp navigation", () => {
       mode: "light",
       accentColor: "#7c3aed",
     });
+    await expect(host.getAppRoute()).resolves.toBe("properties");
 
     await act(async () => {
       await host!.openWorkspace(WORKSPACE_ID, 2);
@@ -149,8 +170,16 @@ describe("SandboxedGatekeeperApp navigation", () => {
     expect(router.state.location.pathname).toBe(`/workspace/${WORKSPACE_ID}`);
 
     await act(async () => {
+      await host!.openAppRoute("connections");
+      await vi.waitFor(() => expect(router.state.location.pathname).toBe("/connections"));
+    });
+    await expect(host.openAppRoute("../admin")).rejects.toThrow(
+      "Invalid gatekeeper app route",
+    );
+
+    await act(async () => {
       await host!.openPrompt("  Create a daily brief.  ");
-      await vi.waitFor(() => expect(router.state.location.pathname).toBe("/"));
+      await vi.waitFor(() => expect(router.state.location.pathname).toBe("/ask-bifana"));
     });
     expect(router.state.location.search).toEqual({ prompt: "Create a daily brief." });
   });

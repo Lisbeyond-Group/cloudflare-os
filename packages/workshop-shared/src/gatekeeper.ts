@@ -79,12 +79,34 @@ export type VendorDescription = {
 }
 
 /**
- * Per-open context the Workshop passes to GatekeeperUser.startAppUi(). `isAdmin` is supplied fresh
- * each time rather than baked into the account, since a user's admin status can change over time.
+ * Per-open context the Workshop passes to GatekeeperUser.startAppUi(). These fields are supplied
+ * fresh from the authenticated Workshop session rather than accepted from the sandboxed iframe.
+ * Keep this deliberately narrow: management apps receive identity and model display metadata,
+ * never provider credentials, tokens, prompts, or provider configuration.
  */
 export type AppUiContext = {
   isAdmin: boolean;
+  viewer: {
+    id: string;
+    name: string;
+  };
+  models: Array<{
+    id: string;
+    name: string;
+  }>;
 }
+
+/**
+ * Verified per-user context supplied by the Workshop's user Durable Object when it asks an
+ * auto-provisioned account to enumerate or mint capabilities. Gatekeepers must treat an absent
+ * context as unauthenticated when their resources depend on employee-level grants.
+ */
+export type GatekeeperUserContext = {
+  viewer: {
+    id: string;
+    name: string;
+  };
+};
 
 // The agent catalog is bounded discovery metadata a gatekeeper exposes via
 // Gatekeeper.getAgentCatalog() so the agent can see *what* is reachable through a session (e.g. the
@@ -573,7 +595,7 @@ export interface GatekeeperUser extends WorkerEntrypoint {
    * implementation could choose to return a narrower set if the specific account does not support
    * every resource that the vendor supports generally.
    */
-  getSupportedResources(): Promise<SupportedResource[]>;
+  getSupportedResources(context?: GatekeeperUserContext): Promise<SupportedResource[]>;
 
   /**
    * Get a Durable Object class that can implement a gatekeeper for the given resource. This class
@@ -587,7 +609,7 @@ export interface GatekeeperUser extends WorkerEntrypoint {
    * The returned class is imbued (via `ctx.props`) with the user's credentials and the resource
    * ID. The returned `resource` indicates which SupportedResource matched the URL.
    */
-  getGatekeeperClassFor(url: string): Promise<{
+  getGatekeeperClassFor(url: string, context?: GatekeeperUserContext): Promise<{
     class: DurableObjectClass<Gatekeeper<any>>;
     resource: SupportedResource;
   }>;
@@ -598,6 +620,7 @@ export interface GatekeeperUser extends WorkerEntrypoint {
    */
   startResourceConfigurator(
     resourceUrlPattern: string,
+    context?: GatekeeperUserContext,
   ): Promise<ResourceConfiguratorFrame>;
 
   /**
@@ -659,7 +682,9 @@ export interface GatekeeperUser extends WorkerEntrypoint {
    * The returned class is imbued (via `ctx.props`) with whatever the account needs to serve the
    * singleton (e.g. the account id and sharing domain).
    */
-  getSingletonGatekeeperClass?(): Promise<DurableObjectClass<Gatekeeper<any>>>;
+  getSingletonGatekeeperClass?(
+    context?: GatekeeperUserContext,
+  ): Promise<DurableObjectClass<Gatekeeper<any>>>;
 
   /**
    * The account's full-page management UI (iframe HTML + ui capability). `context.isAdmin` is passed

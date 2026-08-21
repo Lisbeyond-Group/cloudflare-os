@@ -578,8 +578,18 @@ class AuthenticatedApiImpl extends RpcTarget implements AuthenticatedApi {
     let accounts = await user.listProvidedAccounts();
     let app = accounts.find((account: (typeof accounts)[number]) => account.vendorId === id && account.description.providesUi);
     if (!app) return null;
-    // isAdmin is supplied fresh per open so admin-gated features reflect the user's current status.
-    return user.startAccountAppUi(app.accountId, { isAdmin: this.#isAdmin() });
+    // Identity and model metadata are supplied fresh from the authenticated user DO. The iframe
+    // cannot forge either value, and gatekeepers never receive provider credentials/configuration.
+    let viewer = await user.whoami();
+    if (viewer.type !== "user") throw new Error("Gatekeeper management apps require a user actor.");
+    let models = (await user.listModels())
+        .filter(model => model.type === "agent")
+        .map(model => ({ id: model.id, name: model.name }));
+    return user.startAccountAppUi(app.accountId, {
+      isAdmin: this.#isAdmin(),
+      viewer: { id: viewer.id, name: viewer.name },
+      models,
+    });
   }
 
   // --- Deployment admin ---

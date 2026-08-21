@@ -1,6 +1,6 @@
 import { RpcStub } from "capnweb";
 import { GadgetMetadataWithTimestamps, AiChatAuthorInfo, AiModelConfig, SUGGESTED_MODELS, CollaboratorRole, ConnectedAccountsSubscriber, ConnectedAccountsFilter, GatekeeperVendorFilter, GadgetMetadata, BlueprintMetadata, BlueprintLibrarySummary, BlueprintSource, BlueprintUserSummary, BLUEPRINT_SCREENSHOT_R2_PREFIX, GatekeeperVendorInfo, BlueprintOutput, OutputSummary, WorkpieceId, ListOutputsResult, AUTH_ERROR_CODES, createAuthError } from '@gadgets/workshop-shared/api';
-import { Gatekeeper, GatekeeperUser, GatekeeperUserVerifier, GatekeeperVendor, AccountDescription, VendorDescription, GatekeeperConnectCallback, SupportedResource, ResourceConfiguratorFrame, AppUiContext, GatekeeperUiFrame } from "@gadgets/workshop-shared/gatekeeper";
+import { Gatekeeper, GatekeeperUser, GatekeeperUserVerifier, GatekeeperVendor, AccountDescription, VendorDescription, GatekeeperConnectCallback, SupportedResource, ResourceConfiguratorFrame, AppUiContext, GatekeeperUiFrame, GatekeeperUserContext } from "@gadgets/workshop-shared/gatekeeper";
 import { shouldAutoProvisionAccount, ambientGatekeeperMode } from "./provisioning-policy.js";
 import { CloudflareGatekeeperUser } from "@gadgets/workshop-shared/cloudflare-gatekeeper";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
@@ -1332,7 +1332,31 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
     await this.#ensureAutoProvisionedAccounts();
     let config = await readAdminConfig(this.env);
     let result: ProvidedAccountInfo[] = [];
-    for (let rec of this.#connectedAccountRecords()) {
+    for (let original of this.#connectedAccountRecords()) {
+      let rec = original;
+      // Auto-provisioned accounts outlive Worker releases. Refresh their plain display/capability
+      // metadata so a newly-added singleton or management app reaches existing users without
+      // deleting the account (and therefore without discarding gatekeeper-owned data).
+      try {
+        if (rec.autoProvisioned) {
+          let description = await rec.account.describe();
+          if (JSON.stringify(description) !== JSON.stringify(rec.description)) {
+            // Re-read after the cross-Worker await so we do not overwrite a concurrent credential
+            // status update with the stale record captured at the top of the loop.
+            let latest = this.storage.connectedAccounts.get(rec.id);
+            if (latest) {
+              latest.description = description;
+              this.storage.connectedAccounts.put(latest);
+              rec = latest;
+            }
+          }
+        }
+      } catch (err) {
+        // Metadata refresh is an upgrade convenience, not grounds to hide a previously-valid app.
+        logger.warn("failed to refresh auto-provisioned account description", {
+          event: "account.auto.description.refresh.failed", vendorId: rec.vendorId, error: err,
+        });
+      }
       if (!rec.description.singleton && !rec.description.providesUi) continue;
       // A "disabled" ambient gatekeeper's account stays dormant: don't surface its singleton capsule
       // or management UI. (Its data is preserved, so re-enabling restores it.)
@@ -1354,7 +1378,8 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
     // Present only when description.singleton is set; gate on that, then call through the derived
     // SingletonAccountStub view (see its definition for why the cast is needed).
     if (!record?.description.singleton) return null;
-    return (record.account as unknown as SingletonAccountStub).getSingletonGatekeeperClass();
+    return (record.account as unknown as SingletonAccountStub)
+        .getSingletonGatekeeperClass(this.#gatekeeperUserContext());
   }
 
   /**
@@ -1390,6 +1415,7 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
     // re-subscribes (e.g. on reconnect), matching other deployment config.
     let config = await readAdminConfig(this.env);
     let disabledGatekeeperSet = new Set(config.disabledGatekeepers);
+    let gatekeeperUserContext = this.#gatekeeperUserContext();
 
     async function notifyAdd(record: ConnectedAccountRecord) {
       // Ambient (auto-provisioned) accounts only appear in the Connectors list when their vendor is
@@ -1441,7 +1467,8 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
 
       let supportedResources: SupportedResource[] = [];
       try {
-        supportedResources = await record.account.getSupportedResources();
+        supportedResources = await record.account.getSupportedResources(
+            gatekeeperUserContext);
         supportedResources =
             filterEnabledResources(config, record.vendorId, supportedResources);
       } catch (err) {
@@ -1548,7 +1575,8 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
       resourceUrlPattern: string): Promise<ResourceConfiguratorFrame> {
     let record = this.storage.connectedAccounts.get(accountId);
     if (!record) throw new Error("No such account.");
-    return record.account.startResourceConfigurator(resourceUrlPattern);
+    return record.account.startResourceConfigurator(
+        resourceUrlPattern, this.#gatekeeperUserContext());
   }
 
   /**
@@ -1667,7 +1695,8 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
                   typeUrlPattern: string}> {
     let account = this.storage.connectedAccounts.get(accountId);
     if (!account) throw new Error("No such account.");
-    let {class: cls, resource} = await account.account.getGatekeeperClassFor(url);
+    let {class: cls, resource} = await account.account.getGatekeeperClassFor(
+        url, this.#gatekeeperUserContext());
 
     // Block whole gatekeepers + disabled resources at this single core-side chokepoint where a
     // resourceUrl becomes a capability (reached only via the user/UI-facing Overseer.newGatekeeper
@@ -1687,6 +1716,14 @@ export class UserDurableObject extends DurableObject<Cloudflare.Env> {
     }
 
     return {class: cls, vendorId: account.vendorId, typeUrlPattern: resource.urlPattern};
+  }
+
+  #gatekeeperUserContext(): GatekeeperUserContext {
+    let profile = this.storage.profile.get();
+    if (profile.type !== "user") {
+      throw new Error("Gatekeeper capabilities require a verified user actor.");
+    }
+    return {viewer: {id: profile.id, name: profile.name}};
   }
 
   /**

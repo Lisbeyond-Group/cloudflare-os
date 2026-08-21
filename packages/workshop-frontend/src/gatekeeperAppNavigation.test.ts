@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  GATEKEEPER_APP_ROUTES,
   MAX_GATEKEEPER_APP_PROMPT_LENGTH,
   normalizeGatekeeperAppPrompt,
+  parseGatekeeperAppRoute,
   parseGatekeeperAppWorkspaceTarget,
 } from "./gatekeeperAppNavigation";
 
@@ -45,4 +47,19 @@ describe("normalizeGatekeeperAppPrompt", () => {
       normalizeGatekeeperAppPrompt("x".repeat(MAX_GATEKEEPER_APP_PROMPT_LENGTH + 1)),
     ).toThrow("too long");
   });
+});
+
+describe("parseGatekeeperAppRoute", () => {
+  it.each(Object.keys(GATEKEEPER_APP_ROUTES))("accepts %s", (route) => {
+    expect(parseGatekeeperAppRoute(route)).toBe(route);
+  });
+
+  it.each(["", "/admin", "../properties", "https://example.com", null, 1])(
+    "rejects %s",
+    (route) => {
+      expect(() => parseGatekeeperAppRoute(route)).toThrow(
+        "Invalid gatekeeper app route",
+      );
+    },
+  );
 });

@@ -11,14 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AskBifanaRouteImport } from './routes/ask-bifana'
 import { Route as BlueprintsRouteImport } from './routes/blueprints'
+import { Route as ConnectionsRouteImport } from './routes/connections'
 import { Route as ContextRouteImport } from './routes/context'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as GatekeepersRouteImport } from './routes/gatekeepers'
 import { Route as OutputsRouteImport } from './routes/outputs'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PropertiesRouteImport } from './routes/properties'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as WorkflowsRouteImport } from './routes/workflows'
 import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as BlueprintIdRouteImport } from './routes/blueprint.$id'
 import { Route as GadgetIdRouteImport } from './routes/gadget.$id'
@@ -35,9 +39,19 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AskBifanaRoute = AskBifanaRouteImport.update({
+  id: '/ask-bifana',
+  path: '/ask-bifana',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlueprintsRoute = BlueprintsRouteImport.update({
   id: '/blueprints',
   path: '/blueprints',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectionsRoute = ConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContextRoute = ContextRouteImport.update({
@@ -65,6 +79,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertiesRoute = PropertiesRouteImport.update({
+  id: '/properties',
+  path: '/properties',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProvidersRoute = ProvidersRouteImport.update({
   id: '/providers',
   path: '/providers',
@@ -73,6 +92,11 @@ const ProvidersRoute = ProvidersRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkflowsRoute = WorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkspacesRoute = WorkspacesRouteImport.update({
@@ -104,14 +128,18 @@ const WorkspaceIdRoute = WorkspaceIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/ask-bifana': typeof AskBifanaRoute
   '/blueprints': typeof BlueprintsRoute
+  '/connections': typeof ConnectionsRoute
   '/context': typeof ContextRoute
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
+  '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
   '/signup': typeof SignupRoute
+  '/workflows': typeof WorkflowsRoute
   '/workspaces': typeof WorkspacesRoute
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
@@ -121,14 +149,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/ask-bifana': typeof AskBifanaRoute
   '/blueprints': typeof BlueprintsRoute
+  '/connections': typeof ConnectionsRoute
   '/context': typeof ContextRoute
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
+  '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
   '/signup': typeof SignupRoute
+  '/workflows': typeof WorkflowsRoute
   '/workspaces': typeof WorkspacesRoute
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
@@ -139,14 +171,18 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/ask-bifana': typeof AskBifanaRoute
   '/blueprints': typeof BlueprintsRoute
+  '/connections': typeof ConnectionsRoute
   '/context': typeof ContextRoute
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
+  '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
   '/signup': typeof SignupRoute
+  '/workflows': typeof WorkflowsRoute
   '/workspaces': typeof WorkspacesRoute
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
@@ -158,14 +194,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/ask-bifana'
     | '/blueprints'
+    | '/connections'
     | '/context'
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
     | '/profile'
+    | '/properties'
     | '/providers'
     | '/signup'
+    | '/workflows'
     | '/workspaces'
     | '/blueprint/$id'
     | '/gadget/$id'
@@ -175,14 +215,18 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/ask-bifana'
     | '/blueprints'
+    | '/connections'
     | '/context'
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
     | '/profile'
+    | '/properties'
     | '/providers'
     | '/signup'
+    | '/workflows'
     | '/workspaces'
     | '/blueprint/$id'
     | '/gadget/$id'
@@ -192,14 +236,18 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/ask-bifana'
     | '/blueprints'
+    | '/connections'
     | '/context'
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
     | '/profile'
+    | '/properties'
     | '/providers'
     | '/signup'
+    | '/workflows'
     | '/workspaces'
     | '/blueprint/$id'
     | '/gadget/$id'
@@ -210,14 +258,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AskBifanaRoute: typeof AskBifanaRoute
   BlueprintsRoute: typeof BlueprintsRoute
+  ConnectionsRoute: typeof ConnectionsRoute
   ContextRoute: typeof ContextRoute
   ExploreRoute: typeof ExploreRoute
   GatekeepersRoute: typeof GatekeepersRoute
   OutputsRoute: typeof OutputsRoute
   ProfileRoute: typeof ProfileRoute
+  PropertiesRoute: typeof PropertiesRoute
   ProvidersRoute: typeof ProvidersRoute
   SignupRoute: typeof SignupRoute
+  WorkflowsRoute: typeof WorkflowsRoute
   WorkspacesRoute: typeof WorkspacesRoute
   BlueprintIdRoute: typeof BlueprintIdRoute
   GadgetIdRoute: typeof GadgetIdRoute
@@ -241,11 +293,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ask-bifana': {
+      id: '/ask-bifana'
+      path: '/ask-bifana'
+      fullPath: '/ask-bifana'
+      preLoaderRoute: typeof AskBifanaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blueprints': {
       id: '/blueprints'
       path: '/blueprints'
       fullPath: '/blueprints'
       preLoaderRoute: typeof BlueprintsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connections': {
+      id: '/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof ConnectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/context': {
@@ -283,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/properties': {
+      id: '/properties'
+      path: '/properties'
+      fullPath: '/properties'
+      preLoaderRoute: typeof PropertiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/providers': {
       id: '/providers'
       path: '/providers'
@@ -295,6 +368,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workflows': {
+      id: '/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof WorkflowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workspaces': {
@@ -338,14 +418,18 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AskBifanaRoute: AskBifanaRoute,
   BlueprintsRoute: BlueprintsRoute,
+  ConnectionsRoute: ConnectionsRoute,
   ContextRoute: ContextRoute,
   ExploreRoute: ExploreRoute,
   GatekeepersRoute: GatekeepersRoute,
   OutputsRoute: OutputsRoute,
   ProfileRoute: ProfileRoute,
+  PropertiesRoute: PropertiesRoute,
   ProvidersRoute: ProvidersRoute,
   SignupRoute: SignupRoute,
+  WorkflowsRoute: WorkflowsRoute,
   WorkspacesRoute: WorkspacesRoute,
   BlueprintIdRoute: BlueprintIdRoute,
   GadgetIdRoute: GadgetIdRoute,

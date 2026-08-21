@@ -468,9 +468,14 @@ for (const gk of gatekeepers) {
 
   config.services = config.services || [];
 
-  // For local testing, create an account named "admin" to test admin features.
+  // For local testing, the starter defaults to an account named "admin". A wrapper can opt an
+  // existing local account into admin-only UI without weakening production configuration.
   config.vars = config.vars || {};
-  config.vars.ADMINS = ["admin"];
+  const localAdmins = (process.env.CLOUDFLARE_OS_LOCAL_ADMINS ?? "admin")
+    .split(",")
+    .map(value => value.trim())
+    .filter(Boolean);
+  config.vars.ADMINS = localAdmins.length ? localAdmins : ["admin"];
 
   // Pass through the optional OAuth sign-in / AI Gateway billing env vars from the shell
   // environment, so you can run e.g.
