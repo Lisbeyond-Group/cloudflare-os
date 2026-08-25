@@ -20,15 +20,15 @@ const testState = vi.hoisted(() => {
   };
 });
 
-const toastManager = { add: testState.addToast };
-
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   useNavigate: () => testState.navigate,
 }));
 
+// Fresh object per call, matching the real useKumoToastManager — a hoisted stable mock would
+// hide effects that wrongly depend on the toast manager's identity.
 vi.mock("@cloudflare/kumo", () => ({
-  useKumoToastManager: () => toastManager,
+  useKumoToastManager: () => ({ add: testState.addToast }),
 }));
 
 vi.mock("./AuthContext", () => ({

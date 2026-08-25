@@ -73,7 +73,9 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
         }
       })
     return () => { cancelled = true }
-  }, [authenticatedApi, toasts])
+    // `toasts` is deliberately not a dependency: useKumoToastManager returns a fresh object every
+    // render, so including it refires this effect (and listModels) after its own setModels.
+  }, [authenticatedApi])
 
   const handleModelChange = useCallback((value: string | null) => {
     setSelectedModel(value)
