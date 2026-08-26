@@ -54,7 +54,19 @@ describe("parseGatekeeperAppRoute", () => {
     expect(parseGatekeeperAppRoute(route)).toBe(route);
   });
 
-  it.each(["", "/admin", "../properties", "https://example.com", null, 1])(
+  it.each([
+    "",
+    "/admin",
+    "../properties",
+    "portfolio/../admin",
+    "portfolio/business-pulse?refresh=1",
+    "portfolio/business-pulse#report",
+    "portfolio%2Fbusiness-pulse",
+    "portfolio/unknown",
+    "https://example.com",
+    null,
+    1,
+  ])(
     "rejects %s",
     (route) => {
       expect(() => parseGatekeeperAppRoute(route)).toThrow(

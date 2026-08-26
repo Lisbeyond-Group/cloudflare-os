@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useNavigate } from '@tanstack/react-router'
 import {
   Buildings,
+  ChartPieSlice,
   ChatCircleDots,
   House,
   Lightning,
@@ -179,6 +180,12 @@ export default function CommandPalette({
         label: 'Properties',
         icon: <Buildings size={15} />,
         run: () => navigate({ to: '/properties' }),
+      },
+      {
+        id: 'nav-portfolio',
+        label: 'Portfolio',
+        icon: <ChartPieSlice size={15} />,
+        run: () => navigate({ to: '/portfolio' }),
       },
       {
         id: 'nav-ask-bifana',
