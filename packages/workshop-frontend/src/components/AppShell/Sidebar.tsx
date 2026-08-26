@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import {
   Buildings,
+  ChartPieSlice,
   ChatCircleDots,
   Hexagon,
   House,
@@ -120,6 +121,12 @@ export default function Sidebar({
               to="/properties"
               label="Properties"
               icon={<Buildings size={14} weight="regular" />}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              to="/portfolio"
+              label="Portfolio"
+              icon={<ChartPieSlice size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem

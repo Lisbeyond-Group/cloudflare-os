@@ -3,7 +3,14 @@ import { useDocumentTitle } from '../useDocumentTitle'
 
 const LISBEYOND_APP_ID = 'lisbeyond'
 
-export type LisbeyondProductRoute = 'home' | 'properties' | 'workflows' | 'connections'
+export type LisbeyondProductRoute =
+  | 'home'
+  | 'properties'
+  | 'portfolio'
+  | 'portfolio/revenue-management'
+  | 'portfolio/business-pulse'
+  | 'workflows'
+  | 'connections'
 
 /**
  * Hosts the wrapper-owned Lisbeyond management app at stable employee-facing routes. Cloudflare OS

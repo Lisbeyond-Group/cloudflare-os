@@ -18,6 +18,7 @@ import { Route as ContextRouteImport } from './routes/context'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as GatekeepersRouteImport } from './routes/gatekeepers'
 import { Route as OutputsRouteImport } from './routes/outputs'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PropertiesRouteImport } from './routes/properties'
 import { Route as ProvidersRouteImport } from './routes/providers'
@@ -27,6 +28,8 @@ import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as BlueprintIdRouteImport } from './routes/blueprint.$id'
 import { Route as GadgetIdRouteImport } from './routes/gadget.$id'
 import { Route as GatekeepersAppIdRouteImport } from './routes/gatekeepers_.$appId'
+import { Route as PortfolioBusinessPulseRouteImport } from './routes/portfolio_.business-pulse'
+import { Route as PortfolioRevenueManagementRouteImport } from './routes/portfolio_.revenue-management'
 import { Route as WorkspaceIdRouteImport } from './routes/workspace.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -74,6 +77,11 @@ const OutputsRoute = OutputsRouteImport.update({
   path: '/outputs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -119,6 +127,17 @@ const GatekeepersAppIdRoute = GatekeepersAppIdRouteImport.update({
   path: '/gatekeepers/$appId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortfolioBusinessPulseRoute = PortfolioBusinessPulseRouteImport.update({
+  id: '/portfolio_/business-pulse',
+  path: '/portfolio/business-pulse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortfolioRevenueManagementRoute =
+  PortfolioRevenueManagementRouteImport.update({
+    id: '/portfolio_/revenue-management',
+    path: '/portfolio/revenue-management',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const WorkspaceIdRoute = WorkspaceIdRouteImport.update({
   id: '/workspace/$id',
   path: '/workspace/$id',
@@ -135,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
+  '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
@@ -144,6 +164,8 @@ export interface FileRoutesByFullPath {
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
   '/gatekeepers/$appId': typeof GatekeepersAppIdRoute
+  '/portfolio/business-pulse': typeof PortfolioBusinessPulseRoute
+  '/portfolio/revenue-management': typeof PortfolioRevenueManagementRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRoutesByTo {
@@ -156,6 +178,7 @@ export interface FileRoutesByTo {
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
+  '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
@@ -165,6 +188,8 @@ export interface FileRoutesByTo {
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
   '/gatekeepers/$appId': typeof GatekeepersAppIdRoute
+  '/portfolio/business-pulse': typeof PortfolioBusinessPulseRoute
+  '/portfolio/revenue-management': typeof PortfolioRevenueManagementRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRoutesById {
@@ -178,6 +203,7 @@ export interface FileRoutesById {
   '/explore': typeof ExploreRoute
   '/gatekeepers': typeof GatekeepersRoute
   '/outputs': typeof OutputsRoute
+  '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/properties': typeof PropertiesRoute
   '/providers': typeof ProvidersRoute
@@ -187,6 +213,8 @@ export interface FileRoutesById {
   '/blueprint/$id': typeof BlueprintIdRoute
   '/gadget/$id': typeof GadgetIdRoute
   '/gatekeepers_/$appId': typeof GatekeepersAppIdRoute
+  '/portfolio_/business-pulse': typeof PortfolioBusinessPulseRoute
+  '/portfolio_/revenue-management': typeof PortfolioRevenueManagementRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRouteTypes {
@@ -201,6 +229,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
+    | '/portfolio'
     | '/profile'
     | '/properties'
     | '/providers'
@@ -210,6 +239,8 @@ export interface FileRouteTypes {
     | '/blueprint/$id'
     | '/gadget/$id'
     | '/gatekeepers/$appId'
+    | '/portfolio/business-pulse'
+    | '/portfolio/revenue-management'
     | '/workspace/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -222,6 +253,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
+    | '/portfolio'
     | '/profile'
     | '/properties'
     | '/providers'
@@ -231,6 +263,8 @@ export interface FileRouteTypes {
     | '/blueprint/$id'
     | '/gadget/$id'
     | '/gatekeepers/$appId'
+    | '/portfolio/business-pulse'
+    | '/portfolio/revenue-management'
     | '/workspace/$id'
   id:
     | '__root__'
@@ -243,6 +277,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/gatekeepers'
     | '/outputs'
+    | '/portfolio'
     | '/profile'
     | '/properties'
     | '/providers'
@@ -252,6 +287,8 @@ export interface FileRouteTypes {
     | '/blueprint/$id'
     | '/gadget/$id'
     | '/gatekeepers_/$appId'
+    | '/portfolio_/business-pulse'
+    | '/portfolio_/revenue-management'
     | '/workspace/$id'
   fileRoutesById: FileRoutesById
 }
@@ -265,6 +302,7 @@ export interface RootRouteChildren {
   ExploreRoute: typeof ExploreRoute
   GatekeepersRoute: typeof GatekeepersRoute
   OutputsRoute: typeof OutputsRoute
+  PortfolioRoute: typeof PortfolioRoute
   ProfileRoute: typeof ProfileRoute
   PropertiesRoute: typeof PropertiesRoute
   ProvidersRoute: typeof ProvidersRoute
@@ -274,6 +312,8 @@ export interface RootRouteChildren {
   BlueprintIdRoute: typeof BlueprintIdRoute
   GadgetIdRoute: typeof GadgetIdRoute
   GatekeepersAppIdRoute: typeof GatekeepersAppIdRoute
+  PortfolioBusinessPulseRoute: typeof PortfolioBusinessPulseRoute
+  PortfolioRevenueManagementRoute: typeof PortfolioRevenueManagementRoute
   WorkspaceIdRoute: typeof WorkspaceIdRoute
 }
 
@@ -342,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OutputsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -405,6 +452,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GatekeepersAppIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portfolio_/business-pulse': {
+      id: '/portfolio_/business-pulse'
+      path: '/portfolio/business-pulse'
+      fullPath: '/portfolio/business-pulse'
+      preLoaderRoute: typeof PortfolioBusinessPulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portfolio_/revenue-management': {
+      id: '/portfolio_/revenue-management'
+      path: '/portfolio/revenue-management'
+      fullPath: '/portfolio/revenue-management'
+      preLoaderRoute: typeof PortfolioRevenueManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workspace/$id': {
       id: '/workspace/$id'
       path: '/workspace/$id'
@@ -425,6 +486,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExploreRoute: ExploreRoute,
   GatekeepersRoute: GatekeepersRoute,
   OutputsRoute: OutputsRoute,
+  PortfolioRoute: PortfolioRoute,
   ProfileRoute: ProfileRoute,
   PropertiesRoute: PropertiesRoute,
   ProvidersRoute: ProvidersRoute,
@@ -434,6 +496,8 @@ const rootRouteChildren: RootRouteChildren = {
   BlueprintIdRoute: BlueprintIdRoute,
   GadgetIdRoute: GadgetIdRoute,
   GatekeepersAppIdRoute: GatekeepersAppIdRoute,
+  PortfolioBusinessPulseRoute: PortfolioBusinessPulseRoute,
+  PortfolioRevenueManagementRoute: PortfolioRevenueManagementRoute,
   WorkspaceIdRoute: WorkspaceIdRoute,
 }
 export const routeTree = rootRouteImport
