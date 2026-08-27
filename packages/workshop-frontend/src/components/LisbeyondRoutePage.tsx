@@ -11,6 +11,7 @@ export type LisbeyondProductRoute =
   | 'portfolio/business-pulse'
   | 'workflows'
   | 'connections'
+  | 'settings'
 
 /**
  * Hosts the wrapper-owned Lisbeyond management app at stable employee-facing routes. Cloudflare OS

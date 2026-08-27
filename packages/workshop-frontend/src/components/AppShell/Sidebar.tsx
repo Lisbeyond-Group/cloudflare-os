@@ -48,7 +48,7 @@ export default function Sidebar({
         // Sidebar is the app chrome: a hair greyer than the (lighter) content canvas so the two
         // surfaces read as distinct without a heavy divider.
         'flex h-screen flex-col border-r border-kumo-line bg-kumo-elevated',
-        collapsed ? 'w-[56px]' : 'w-[260px]',
+        collapsed ? 'w-[56px]' : 'w-[260px] xl:w-[280px] 2xl:w-[296px]',
         'shrink-0 transition-[width] duration-200 ease-out',
       ].join(' ')}
     >
@@ -64,7 +64,7 @@ export default function Sidebar({
             <Hexagon size={20} weight="bold" className="text-kumo-brand shrink-0" />
           </SiteLogo>
           {!collapsed && (
-            <span className="truncate text-[14px] leading-5 font-semibold tracking-[-0.25px] text-kumo-default">
+            <span className="truncate text-[14px] leading-5 font-semibold tracking-[-0.25px] text-kumo-default xl:text-[15px] 2xl:text-[16px]">
               {siteName}
             </span>
           )}
