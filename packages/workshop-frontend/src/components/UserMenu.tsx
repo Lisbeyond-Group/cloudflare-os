@@ -19,7 +19,7 @@ export default function UserMenu() {
       <DropdownMenu.Trigger
         render={
           <button
-            className="w-7 h-7 cursor-pointer rounded-full flex items-center justify-center bg-kumo-tint hover:bg-kumo-fill transition-colors overflow-hidden"
+            className="h-10 w-10 cursor-pointer rounded-full flex items-center justify-center bg-kumo-tint hover:bg-kumo-fill transition-colors overflow-hidden"
             title="Open profile menu"
             aria-label="Open profile menu"
           >
@@ -37,6 +37,12 @@ export default function UserMenu() {
           className={MENU_ITEM}
         >
           Profile
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          onClick={() => navigate({ to: '/settings' })}
+          className={MENU_ITEM}
+        >
+          Access settings
         </DropdownMenu.Item>
         <DropdownMenu.Item
           onClick={() => navigate({ to: '/providers' })}

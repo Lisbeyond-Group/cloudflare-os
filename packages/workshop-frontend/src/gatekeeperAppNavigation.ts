@@ -9,6 +9,7 @@ export const GATEKEEPER_APP_ROUTES = {
   "ask-bifana": "/ask-bifana",
   workflows: "/workflows",
   connections: "/connections",
+  settings: "/settings",
 } as const;
 
 export type GatekeeperAppRoute = keyof typeof GATEKEEPER_APP_ROUTES;
