@@ -41,35 +41,37 @@ function ThemeModeButton() {
   )
 }
 
+function SettingsButton() {
+  return (
+    <Tooltip
+      content="Settings"
+      render={(
+        <Link
+          to="/settings"
+          aria-label="Settings"
+          className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-kumo-inactive transition-[background-color,color] hover:bg-kumo-tint hover:text-kumo-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kumo-ring focus-visible:ring-offset-2 focus-visible:ring-offset-kumo-elevated"
+        >
+          <GearSix size={15} />
+        </Link>
+      )}
+    />
+  )
+}
+
 export default function SidebarUtilityStrip({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div
       className={[
         // shrink-0 + solid base so the strip is visually pinned above the scrolling rail body
         // and content can't bleed through it. Flat treatment — no top shadow.
-        'shrink-0 flex flex-col gap-1 border-t border-kumo-line bg-kumo-elevated px-2 py-2',
-        collapsed ? 'items-center gap-2 px-1.5' : '',
+        'shrink-0 flex border-t border-kumo-line bg-kumo-elevated py-2',
+        collapsed ? 'flex-col items-center gap-2 px-1.5' : 'items-center gap-1 px-2',
       ].join(' ')}
     >
-      <Link
-        to="/settings"
-        aria-label="Settings"
-        title="Settings"
-        className={[
-          'press flex h-10 items-center rounded-lg text-[13px] font-medium text-kumo-subtle xl:h-11 xl:text-[14px] 2xl:h-12 2xl:text-[15px]',
-          'transition-[background-color,color] hover:bg-kumo-tint hover:text-kumo-default',
-          collapsed ? 'w-10 justify-center' : 'w-full gap-2 px-2',
-        ].join(' ')}
-      >
-        <GearSix size={16} />
-        {!collapsed && <span>Settings</span>}
-      </Link>
-      <div className={collapsed
-        ? 'flex flex-col items-center gap-2'
-        : 'flex w-full items-center justify-end gap-1'}>
-        <ThemeModeButton />
-        <UserMenu />
-      </div>
+      {!collapsed && <div className="min-w-0 flex-1"><UserMenu showIdentity /></div>}
+      <ThemeModeButton />
+      <SettingsButton />
+      {collapsed && <UserMenu />}
     </div>
   )
 }
