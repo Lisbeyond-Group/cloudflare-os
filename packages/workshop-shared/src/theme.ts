@@ -6,6 +6,11 @@ export interface GatekeeperAppTheme {
   mode: "light" | "dark";
   /** The deployment accent seed, or null to use the app's base palette. */
   accentColor: string | null;
+  /** Optional host capabilities the app may use when present. */
+  features?: {
+    /** The host accepts bounded connection summaries for its navigation rail. */
+    connections?: boolean;
+  };
 }
 
 /** A sandboxed gatekeeper app capability that receives complete appearance updates. */

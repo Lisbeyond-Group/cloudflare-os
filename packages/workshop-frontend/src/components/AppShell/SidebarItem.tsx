@@ -48,16 +48,16 @@ export default function SidebarItem({
       {...linkProps}
       title={collapsed ? label : undefined}
       className={[
-        'group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] leading-[18px] tracking-[-0.25px] transition-colors xl:h-9 xl:text-[14px] 2xl:h-10 2xl:text-[15px]',
+        'group relative flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-[13px] leading-[18px] tracking-[-0.25px] transition-colors max-md:h-11',
         isActive
-          ? 'bg-kumo-fill font-medium text-kumo-strong'
-          : 'font-normal text-kumo-default hover:bg-kumo-tint',
+          ? 'bg-lb-rail-active font-medium text-lb-rail-ink'
+          : 'font-normal text-lb-rail-ink-2 hover:bg-lb-rail-active hover:text-lb-rail-ink',
       ].join(' ')}
     >
       <span
         className={[
           'flex h-5 w-5 shrink-0 items-center justify-center transition-colors',
-          isActive ? 'text-kumo-brand' : 'text-kumo-subtle group-hover:text-kumo-default',
+          isActive ? 'text-lb-rail-ink' : 'text-lb-rail-ink-2 group-hover:text-lb-rail-ink',
         ].join(' ')}
       >
         {icon}
@@ -65,7 +65,7 @@ export default function SidebarItem({
       {!collapsed && (
         <>
           <span className="min-w-0 flex-1 truncate">{label}</span>
-          {trailing && <span className="shrink-0 text-kumo-inactive">{trailing}</span>}
+          {trailing && <span className="shrink-0 text-lb-rail-muted">{trailing}</span>}
         </>
       )}
     </Link>
