@@ -63,6 +63,8 @@ describe("parseGatekeeperAppRoute", () => {
     "portfolio/business-pulse#report",
     "portfolio%2Fbusiness-pulse",
     "portfolio/unknown",
+    "sales/../admin",
+    "sales/new-leads?write=1",
     "https://example.com",
     null,
     1,

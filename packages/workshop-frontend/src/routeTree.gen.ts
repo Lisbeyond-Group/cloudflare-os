@@ -31,6 +31,7 @@ import { Route as GadgetIdRouteImport } from './routes/gadget.$id'
 import { Route as GatekeepersAppIdRouteImport } from './routes/gatekeepers_.$appId'
 import { Route as PortfolioBusinessPulseRouteImport } from './routes/portfolio_.business-pulse'
 import { Route as PortfolioRevenueManagementRouteImport } from './routes/portfolio_.revenue-management'
+import { Route as SalesNewLeadsRouteImport } from './routes/sales_.new-leads'
 import { Route as WorkspaceIdRouteImport } from './routes/workspace.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -144,6 +145,11 @@ const PortfolioRevenueManagementRoute =
     path: '/portfolio/revenue-management',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SalesNewLeadsRoute = SalesNewLeadsRouteImport.update({
+  id: '/sales_/new-leads',
+  path: '/sales/new-leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkspaceIdRoute = WorkspaceIdRouteImport.update({
   id: '/workspace/$id',
   path: '/workspace/$id',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/gatekeepers/$appId': typeof GatekeepersAppIdRoute
   '/portfolio/business-pulse': typeof PortfolioBusinessPulseRoute
   '/portfolio/revenue-management': typeof PortfolioRevenueManagementRoute
+  '/sales/new-leads': typeof SalesNewLeadsRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRoutesByTo {
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/gatekeepers/$appId': typeof GatekeepersAppIdRoute
   '/portfolio/business-pulse': typeof PortfolioBusinessPulseRoute
   '/portfolio/revenue-management': typeof PortfolioRevenueManagementRoute
+  '/sales/new-leads': typeof SalesNewLeadsRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRoutesById {
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/gatekeepers_/$appId': typeof GatekeepersAppIdRoute
   '/portfolio_/business-pulse': typeof PortfolioBusinessPulseRoute
   '/portfolio_/revenue-management': typeof PortfolioRevenueManagementRoute
+  '/sales_/new-leads': typeof SalesNewLeadsRoute
   '/workspace/$id': typeof WorkspaceIdRoute
 }
 export interface FileRouteTypes {
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/gatekeepers/$appId'
     | '/portfolio/business-pulse'
     | '/portfolio/revenue-management'
+    | '/sales/new-leads'
     | '/workspace/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/gatekeepers/$appId'
     | '/portfolio/business-pulse'
     | '/portfolio/revenue-management'
+    | '/sales/new-leads'
     | '/workspace/$id'
   id:
     | '__root__'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/gatekeepers_/$appId'
     | '/portfolio_/business-pulse'
     | '/portfolio_/revenue-management'
+    | '/sales_/new-leads'
     | '/workspace/$id'
   fileRoutesById: FileRoutesById
 }
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   GatekeepersAppIdRoute: typeof GatekeepersAppIdRoute
   PortfolioBusinessPulseRoute: typeof PortfolioBusinessPulseRoute
   PortfolioRevenueManagementRoute: typeof PortfolioRevenueManagementRoute
+  SalesNewLeadsRoute: typeof SalesNewLeadsRoute
   WorkspaceIdRoute: typeof WorkspaceIdRoute
 }
 
@@ -486,6 +499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRevenueManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales_/new-leads': {
+      id: '/sales_/new-leads'
+      path: '/sales/new-leads'
+      fullPath: '/sales/new-leads'
+      preLoaderRoute: typeof SalesNewLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workspace/$id': {
       id: '/workspace/$id'
       path: '/workspace/$id'
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   GatekeepersAppIdRoute: GatekeepersAppIdRoute,
   PortfolioBusinessPulseRoute: PortfolioBusinessPulseRoute,
   PortfolioRevenueManagementRoute: PortfolioRevenueManagementRoute,
+  SalesNewLeadsRoute: SalesNewLeadsRoute,
   WorkspaceIdRoute: WorkspaceIdRoute,
 }
 export const routeTree = rootRouteImport

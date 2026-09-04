@@ -8,6 +8,7 @@ import {
   Lightning,
   MagnifyingGlass,
   PlugsConnected,
+  UsersThree,
 } from '@phosphor-icons/react'
 import { useAuthenticatedApi } from '../../AuthContext'
 import type { GadgetMetadataWithTimestamps } from '@gadgets/workshop-shared/api'
@@ -186,6 +187,12 @@ export default function CommandPalette({
         label: 'Portfolio',
         icon: <ChartPieSlice size={15} />,
         run: () => navigate({ to: '/portfolio' }),
+      },
+      {
+        id: 'nav-sales',
+        label: 'Sales · New Leads',
+        icon: <UsersThree size={15} />,
+        run: () => navigate({ to: '/sales/new-leads' }),
       },
       {
         id: 'nav-ask-bifana',

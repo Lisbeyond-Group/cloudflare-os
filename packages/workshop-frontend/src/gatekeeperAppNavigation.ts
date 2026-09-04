@@ -6,6 +6,7 @@ export const GATEKEEPER_APP_ROUTES = {
   portfolio: "/portfolio",
   "portfolio/revenue-management": "/portfolio/revenue-management",
   "portfolio/business-pulse": "/portfolio/business-pulse",
+  "sales/new-leads": "/sales/new-leads",
   "ask-bifana": "/ask-bifana",
   workflows: "/workflows",
   connections: "/connections",

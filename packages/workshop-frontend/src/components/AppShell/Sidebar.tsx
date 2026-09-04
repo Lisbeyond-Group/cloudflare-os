@@ -9,6 +9,7 @@ import {
   MagnifyingGlass,
   PlugsConnected,
   SidebarSimple,
+  UsersThree,
 } from '@phosphor-icons/react'
 import { useSiteName } from '../../ServerConfigContext'
 import SiteLogo from '../SiteLogo'
@@ -127,6 +128,12 @@ export default function Sidebar({
               to="/portfolio"
               label="Portfolio"
               icon={<ChartPieSlice size={14} weight="regular" />}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              to="/sales/new-leads"
+              label="Sales"
+              icon={<UsersThree size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem
