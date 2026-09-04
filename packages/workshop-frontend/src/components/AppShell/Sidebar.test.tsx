@@ -95,6 +95,21 @@ afterEach(async () => {
 })
 
 describe('Console v3 sidebar', () => {
+  it('marks expanded and collapsed rails for the responsive CSS contract', async () => {
+    const expanded = await renderSidebar()
+    expect(expanded.querySelector('aside[aria-label="Primary"]')?.getAttribute('data-collapsed'))
+      .toBe('false')
+
+    await act(async () => root?.unmount())
+    container?.remove()
+    root = undefined
+    container = undefined
+
+    const collapsed = await renderSidebar({ collapsed: true })
+    expect(collapsed.querySelector('aside[aria-label="Primary"]')?.getAttribute('data-collapsed'))
+      .toBe('true')
+  })
+
   it('renders six primary items and moves Connections out of primary navigation', async () => {
     const view = await renderSidebar()
     const navLinks = [...view.querySelectorAll('nav a')]

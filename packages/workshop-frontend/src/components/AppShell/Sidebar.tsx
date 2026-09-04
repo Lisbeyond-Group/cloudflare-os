@@ -46,8 +46,9 @@ export default function Sidebar({
   return (
     <aside
       aria-label="Primary"
+      data-collapsed={collapsed ? 'true' : 'false'}
       className={[
-        'flex h-screen flex-col bg-lb-rail text-lb-rail-ink-2',
+        'lb-sidebar-rail flex h-screen flex-col bg-lb-rail text-lb-rail-ink-2',
         collapsed ? 'w-[56px]' : 'w-[232px]',
         'shrink-0 transition-[width] duration-200 ease-out',
       ].join(' ')}
