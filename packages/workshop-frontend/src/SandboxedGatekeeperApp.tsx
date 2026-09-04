@@ -102,6 +102,7 @@ class GatekeeperAppHostImpl extends RpcTarget {
   #pendingActive: boolean | null = null
   #pendingResolvers: ((ack: PresentAck) => void)[] = []
   #frameId: number | null = null
+  #promptNavigationTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     capability: any,
@@ -154,7 +155,16 @@ class GatekeeperAppHostImpl extends RpcTarget {
   }
 
   openPrompt(prompt: string): void {
-    this.#openPrompt(normalizeGatekeeperAppPrompt(prompt))
+    const normalizedPrompt = normalizeGatekeeperAppPrompt(prompt)
+    // Cap'n Web posts the invocation and the awaiting caller's result pull as ordered MessagePort
+    // messages. The pull is already queued when this invocation reaches the host. Navigating here
+    // synchronously unmounts the route-owned iframe before that pull is handled, so the caller sees
+    // a closed peer instead of an acknowledgement. Move only navigation to the next browser task.
+    if (this.#promptNavigationTimer !== null) clearTimeout(this.#promptNavigationTimer)
+    this.#promptNavigationTimer = setTimeout(() => {
+      this.#promptNavigationTimer = null
+      this.#openPrompt(normalizedPrompt)
+    }, 0)
   }
 
   getAppRoute(): string | null {
@@ -228,6 +238,10 @@ class GatekeeperAppHostImpl extends RpcTarget {
     if (this.#frameId !== null) {
       cancelAnimationFrame(this.#frameId)
       this.#frameId = null
+    }
+    if (this.#promptNavigationTimer !== null) {
+      clearTimeout(this.#promptNavigationTimer)
+      this.#promptNavigationTimer = null
     }
     for (const resolve of this.#pendingResolvers) resolve({ rect: null, willResize: false })
     this.#pendingResolvers = []

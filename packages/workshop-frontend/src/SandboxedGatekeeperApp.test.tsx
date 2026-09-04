@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
   createMemoryHistory,
+  Outlet,
   createRootRoute,
   createRoute,
   createRouter,
@@ -207,5 +208,65 @@ describe("SandboxedGatekeeperApp navigation", () => {
       await vi.waitFor(() => expect(router.state.location.pathname).toBe("/ask-bifana"));
     });
     expect(router.state.location.search).toEqual({ prompt: "Create a daily brief." });
+  });
+
+  it("acknowledges a Home prompt before production route teardown closes the bridge", async () => {
+    const frame = {
+      iframeHtml: "<!doctype html><title>Lisbeyond Home</title>",
+      ui: new RpcStub(new EmptyUi()),
+    } as unknown as GatekeeperUiFrame;
+    const rootRoute = createRootRoute({ component: Outlet });
+    const indexRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/",
+      component: () => (
+        <RailConnectionsProvider>
+          <SandboxedGatekeeperApp
+            frame={frame}
+            gatekeeperVendorId="lisbeyond"
+            appRoute="home"
+          />
+        </RailConnectionsProvider>
+      ),
+    });
+    const askBifanaRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/ask-bifana",
+      component: () => <p>Ask Bifana</p>,
+    });
+    const history = createMemoryHistory({ initialEntries: ["/"] });
+    const router = createRouter({
+      history,
+      routeTree: rootRoute.addChildren([indexRoute, askBifanaRoute]),
+    });
+
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+
+    const iframe = container.querySelector("iframe");
+    if (!iframe) throw new Error("Missing gatekeeper iframe");
+    const { port1, port2 } = new MessageChannel();
+    host = newMessagePortRpcSession<TestHost>(port1);
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "handshake" },
+        origin: "null",
+        source: iframe.contentWindow,
+        ports: [port2],
+      }),
+    );
+
+    await expect(host.openPrompt("   ")).rejects.toThrow(
+      "Gatekeeper app prompt cannot be empty",
+    );
+    expect(router.state.location.pathname).toBe("/");
+
+    await act(async () => {
+      await expect(host!.openPrompt("  Which listings changed?  ")).resolves.toBeUndefined();
+      await vi.waitFor(() => expect(router.state.location.pathname).toBe("/ask-bifana"));
+    });
+    expect(router.state.location.search).toEqual({ prompt: "Which listings changed?" });
   });
 });
