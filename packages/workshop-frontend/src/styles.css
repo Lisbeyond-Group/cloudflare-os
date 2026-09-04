@@ -3,11 +3,31 @@
 @import "tailwindcss";
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
+@font-face {
+  font-family: "Lexend";
+  src: url("/fonts/Lexend-variable-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 300 600;
+}
+
 @theme {
   /* ===== FONTS ===== */
-  --font-sans: "FT Kunst Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --font-sans: "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Roboto", "Helvetica Neue", sans-serif;
   --font-mono: "Apercu Mono Pro", "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* ===== LISBEYOND CONSOLE RAIL ===== */
+  --color-lb-rail: #111a45;
+  --color-lb-rail-ink: #fdf1e4;
+  --color-lb-rail-ink-2: rgba(253, 241, 228, 0.75);
+  --color-lb-rail-muted: rgba(253, 241, 228, 0.55);
+  --color-lb-rail-label: rgba(172, 211, 244, 0.85);
+  --color-lb-rail-active: rgba(253, 241, 228, 0.1);
+  --color-lb-rail-line: rgba(253, 241, 228, 0.14);
+  --color-lb-rail-good: #8fd6b3;
+  --color-lb-rail-info: #acd3f4;
+  --color-lb-accent: #dc422f;
 
   /* ===== TEXT SIZES (restore Tailwind defaults, overriding Kumo's 12/13/14/16px) ===== */
   --text-xs: 0.75rem;
@@ -36,9 +56,9 @@
   --color-kumo-fill-hover: #dededb;
   --color-kumo-interact: #cac8c3;
 
-  /* Brand — warm orange accent (intent only) */
-  --color-kumo-brand: #ff4801;
-  --color-kumo-brand-hover: #e03f00;
+  /* Brand — Lisbeyond red accent (intent only) */
+  --color-kumo-brand: #dc422f;
+  --color-kumo-brand-hover: #c2382a;
 
   /* Border / line tokens — neutral hairlines */
   --color-kumo-line: #1411100f;
@@ -157,8 +177,8 @@
   --color-kumo-ring: oklch(0.52 0.065 285);
   --color-kumo-bubble-user: oklch(0.225 0.025 285);
 
-  --color-kumo-brand: #b84e00;
-  --color-kumo-brand-hover: #a54200;
+  --color-kumo-brand: #dc422f;
+  --color-kumo-brand-hover: #c2382a;
 
   --color-kumo-info: oklch(62.3% 0.214 259.815);
   --color-kumo-info-tint: oklch(0.25 0.065 259.815);
@@ -221,6 +241,12 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-kumo-base);
   color: var(--text-color-kumo-default);
+}
+
+/* Kento is named first so its licensed webfont can be dropped in later; Lexend is the required
+   fallback until that licence is confirmed. */
+.rail-label {
+  font-family: "Kento", "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 ::selection {
@@ -563,7 +589,7 @@ html {
 }
 .sidebar-scroll:hover,
 .sidebar-scroll:focus-within {
-  scrollbar-color: color-mix(in srgb, var(--color-kumo-interact) 60%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-lb-rail-label) 60%, transparent) transparent;
 }
 .sidebar-scroll::-webkit-scrollbar {
   width: 6px;
@@ -576,10 +602,10 @@ html {
 }
 .sidebar-scroll:hover::-webkit-scrollbar-thumb,
 .sidebar-scroll:focus-within::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-kumo-interact) 55%, transparent);
+  background: color-mix(in srgb, var(--color-lb-rail-label) 55%, transparent);
 }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--color-kumo-interact) 80%, transparent);
+  background: color-mix(in srgb, var(--color-lb-rail-label) 80%, transparent);
 }
 .sidebar-scroll::-webkit-scrollbar-track {
   background: transparent;

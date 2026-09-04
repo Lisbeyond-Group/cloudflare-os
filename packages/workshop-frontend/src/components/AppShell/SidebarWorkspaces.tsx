@@ -28,6 +28,7 @@ import { useAuthenticatedApi } from '../../AuthContext'
 import ShareModal from '../../ShareModal'
 import DeleteConfirmationDialog from '../DeleteConfirmationDialog'
 import SidebarGadgetRow from './SidebarGadgetRow'
+import { RailLabel } from './RailConnections'
 
 // Cap on items shown in the Recent list before the user clicks through to /workspaces.
 const RECENT_INITIAL_LIMIT = 6
@@ -278,7 +279,7 @@ export function SidebarWorkspacesTools({ collapsed = false }: { collapsed?: bool
         onClick={() => openCommandPalette()}
         aria-label="Search"
         title="Search (⌘K)"
-        className="press flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-kumo-subtle transition-colors hover:bg-kumo-tint hover:text-kumo-default"
+        className="press flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
       >
         <MagnifyingGlass size={15} />
       </button>
@@ -337,10 +338,10 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
         count={favorites.length}
         open={favOpen}
         onToggle={() => setFavOpen((o) => !o)}
-        icon={<Star size={12} weight="regular" className="text-kumo-inactive" />}
+        icon={<Star size={12} weight="regular" className="text-lb-rail-label" />}
       >
         {favorites.length === 0 ? (
-          <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-kumo-inactive">
+          <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-lb-rail-muted">
             Save a conversation to keep it here.
           </p>
         ) : (
@@ -368,11 +369,11 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
         {gadgetsLoading ? (
           <div className="flex flex-col gap-1 px-1">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-7 rounded-md bg-kumo-elevated animate-pulse" />
+              <div key={i} className="h-7 rounded-md bg-lb-rail-active animate-pulse" />
             ))}
           </div>
         ) : recent.length === 0 ? (
-          <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-kumo-inactive">
+          <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-lb-rail-muted">
             {search ? 'No matches.' : 'No conversations yet.'}
           </p>
         ) : (
@@ -391,7 +392,7 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
             </div>
             <Link
               to="/workspaces"
-              className="mt-0.5 flex h-7 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium tracking-[-0.2px] text-kumo-subtle transition-colors hover:bg-kumo-tint hover:text-kumo-default"
+              className="mt-0.5 flex min-h-10 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium tracking-[-0.2px] text-lb-rail-label transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:min-h-11"
             >
               {recentHidden > 0 ? `Show all (${recent.length})` : 'Show all'}
               <ArrowRight size={11} weight="bold" />
@@ -424,7 +425,7 @@ function SidebarSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex h-6 cursor-pointer items-center gap-1 px-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-kumo-inactive transition-colors hover:text-kumo-subtle"
+        className="flex min-h-10 cursor-pointer items-center gap-1 px-1.5 text-lb-rail-label transition-colors hover:text-lb-rail-ink max-md:min-h-11"
       >
         <CaretDown
           size={10}
@@ -432,8 +433,8 @@ function SidebarSection({
           className={['transition-transform', open ? '' : '-rotate-90'].join(' ')}
         />
         {icon}
-        <span>{label}</span>
-        {count !== undefined && <span className="ml-1 text-kumo-inactive">{count}</span>}
+        <RailLabel>{label}</RailLabel>
+        {count !== undefined && <span className="ml-1 text-[11px] text-lb-rail-muted">{count}</span>}
       </button>
       {open && <div className="mt-0.5">{children}</div>}
     </div>

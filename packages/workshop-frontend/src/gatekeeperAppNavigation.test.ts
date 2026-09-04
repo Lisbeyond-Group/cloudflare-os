@@ -1,13 +1,74 @@
 import { describe, expect, it } from "vitest";
 import {
   GATEKEEPER_APP_ROUTES,
+  gatekeeperAppCanReportConnections,
+  MAX_GATEKEEPER_APP_CONNECTIONS,
+  MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH,
   MAX_GATEKEEPER_APP_PROMPT_LENGTH,
   normalizeGatekeeperAppPrompt,
+  parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
   parseGatekeeperAppWorkspaceTarget,
 } from "./gatekeeperAppNavigation";
 
 const WORKSPACE_ID = "a".repeat(64);
+
+const VALID_CONNECTION = {
+  id: "hostaway",
+  name: "Hostaway",
+  state: "live",
+  detail: "Live",
+} as const;
+
+describe("gatekeeperAppCanReportConnections", () => {
+  it("allows only the Lisbeyond app to publish host-rail status", () => {
+    expect(gatekeeperAppCanReportConnections("lisbeyond")).toBe(true);
+    expect(gatekeeperAppCanReportConnections("scheduler")).toBe(false);
+    expect(gatekeeperAppCanReportConnections("context")).toBe(false);
+  });
+});
+
+describe("parseGatekeeperAppConnections", () => {
+  it("accepts and reduces a valid connection list", () => {
+    expect(parseGatekeeperAppConnections([
+      { ...VALID_CONNECTION, ignored: true },
+      { id: "salesforce", name: "Salesforce", state: "partial", detail: "Needs access" },
+      { id: "notion", name: "Notion", state: "off", detail: "Not connected" },
+    ])).toEqual([
+      VALID_CONNECTION,
+      { id: "salesforce", name: "Salesforce", state: "partial", detail: "Needs access" },
+      { id: "notion", name: "Notion", state: "off", detail: "Not connected" },
+    ]);
+  });
+
+  it.each([
+    null,
+    {},
+    "hostaway",
+    Array.from({ length: MAX_GATEKEEPER_APP_CONNECTIONS + 1 }, () => VALID_CONNECTION),
+  ])("rejects a non-list or oversized list: %s", (value) => {
+    expect(() => parseGatekeeperAppConnections(value)).toThrow(
+      "Invalid gatekeeper app connection report",
+    );
+  });
+
+  it.each([
+    {},
+    { ...VALID_CONNECTION, id: undefined },
+    { ...VALID_CONNECTION, id: "Hostaway" },
+    { ...VALID_CONNECTION, id: "hostaway/calendar" },
+    { ...VALID_CONNECTION, id: "x".repeat(MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH + 1) },
+    { ...VALID_CONNECTION, name: "" },
+    { ...VALID_CONNECTION, name: "x".repeat(MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH + 1) },
+    { ...VALID_CONNECTION, state: "stale" },
+    { ...VALID_CONNECTION, detail: "" },
+    { ...VALID_CONNECTION, detail: "x".repeat(MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH + 1) },
+  ])("rejects an invalid row: %s", (row) => {
+    expect(() => parseGatekeeperAppConnections([row])).toThrow(
+      "Invalid gatekeeper app connection report",
+    );
+  });
+});
 
 describe("parseGatekeeperAppWorkspaceTarget", () => {
   it("accepts a workspace ID with an optional gadget", () => {

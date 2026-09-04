@@ -15,12 +15,16 @@ import { forwardTrustedFrameError } from './errorReporting'
 import { useAuthenticatedApi } from './AuthContext'
 import {
   GATEKEEPER_APP_ROUTES,
+  gatekeeperAppCanReportConnections,
   normalizeGatekeeperAppPrompt,
+  parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
   parseGatekeeperAppWorkspaceTarget,
+  type GatekeeperAppConnection,
   type GatekeeperAppRoute,
   type GatekeeperAppWorkspaceTarget,
 } from './gatekeeperAppNavigation'
+import { useRailConnections } from './components/AppShell/railConnectionsContext'
 
 // The content-pane rect, in viewport coordinates, that the app pins its page to while the iframe
 // is full-viewport.
@@ -39,8 +43,10 @@ type OpenTarget = (target: GatekeeperAppWorkspaceTarget) => void
 type ResolveWorkspaceTitles = (ids: string[]) => Promise<(string | null)[]>
 type OpenPrompt = (prompt: string) => void
 type OpenAppRoute = (route: GatekeeperAppRoute) => void
+type ReportConnections = (rows: GatekeeperAppConnection[]) => void
 
 type OverlayState = 'full' | null
+const CONNECTIONS_FEATURE = { connections: true } as const
 
 // Upper bound on one workspace-title lookup, matching the app's page size.
 const MAX_RESOLVED_WORKSPACES = 100
@@ -88,6 +94,7 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #appRoute: string | null
   readonly #openAppRoute: OpenAppRoute
   readonly #resolveWorkspaceTitles: ResolveWorkspaceTitles
+  readonly #reportConnections: ReportConnections
   #presenting = false
   #theme: GatekeeperAppTheme
   #themeReceiver: RpcStub<GatekeeperAppThemeReceiver> | null = null
@@ -105,6 +112,7 @@ class GatekeeperAppHostImpl extends RpcTarget {
     appRoute: string | null,
     openAppRoute: OpenAppRoute,
     resolveWorkspaceTitles: ResolveWorkspaceTitles,
+    reportConnections: ReportConnections,
   ) {
     super()
     this.#theme = theme
@@ -123,6 +131,7 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#appRoute = appRoute
     this.#openAppRoute = openAppRoute
     this.#resolveWorkspaceTitles = resolveWorkspaceTitles
+    this.#reportConnections = reportConnections
   }
 
   get ui(): RpcStub<RpcTarget> {
@@ -154,6 +163,10 @@ class GatekeeperAppHostImpl extends RpcTarget {
 
   openAppRoute(route: unknown): void {
     this.#openAppRoute(parseGatekeeperAppRoute(route))
+  }
+
+  reportConnections(rows: unknown): void {
+    this.#reportConnections(parseGatekeeperAppConnections(rows))
   }
 
   // The app calls this once to learn the current theme and register a receiver for later changes.
@@ -238,6 +251,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
 }) {
   const navigate = useNavigate()
   const { authenticatedApi } = useAuthenticatedApi()
+  const { reportConnections } = useRailConnections()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const sessionRef = useRef<{ [Symbol.dispose]?(): void } | null>(null)
   const hostRef = useRef<GatekeeperAppHostImpl | null>(null)
@@ -251,11 +265,31 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
   const accentColor = configuredAccentColor && isHexColor(configuredAccentColor)
     ? configuredAccentColor
     : null
-  const themeRef = useRef<GatekeeperAppTheme>({ mode: resolvedThemeMode, accentColor })
-  themeRef.current = { mode: resolvedThemeMode, accentColor }
+  const connectionsEnabled = gatekeeperAppCanReportConnections(gatekeeperVendorId)
+  const themeRef = useRef<GatekeeperAppTheme>({
+    mode: resolvedThemeMode,
+    accentColor,
+    ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+  })
+  themeRef.current = {
+    mode: resolvedThemeMode,
+    accentColor,
+    ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+  }
   useEffect(() => {
-    hostRef.current?.updateTheme({ mode: resolvedThemeMode, accentColor })
-  }, [resolvedThemeMode, accentColor])
+    hostRef.current?.updateTheme({
+      mode: resolvedThemeMode,
+      accentColor,
+      ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+    })
+  }, [resolvedThemeMode, accentColor, connectionsEnabled])
+
+  const acceptConnections = useCallback((rows: GatekeeperAppConnection[]) => {
+    if (!connectionsEnabled) {
+      throw new TypeError('Connection reports are not available for this app.')
+    }
+    reportConnections(rows)
+  }, [connectionsEnabled, reportConnections])
 
   const setOverlayPhase = useCallback((next: OverlayState) => {
     if (overlayRef.current === next) return
@@ -346,6 +380,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
         appRoute,
         openAppRoute,
         resolveWorkspaceTitles,
+        acceptConnections,
       )
       hostRef.current = host
       sessionRef.current = newMessagePortRpcSession(port, host)
@@ -378,8 +413,8 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     }
     // Re-establish the session if either the HTML or the `ui` capability changes, so a new frame
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
-  }, [appRoute, frame.iframeHtml, frame.ui, gatekeeperVendorId, openAppRoute, openPrompt, openTarget,
-      present, resolveWorkspaceTitles, setOverlayPhase])
+  }, [acceptConnections, appRoute, frame.iframeHtml, frame.ui, gatekeeperVendorId, openAppRoute,
+      openPrompt, openTarget, present, resolveWorkspaceTitles, setOverlayPhase])
 
   return (
     <iframe

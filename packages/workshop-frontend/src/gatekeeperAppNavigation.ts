@@ -15,6 +15,61 @@ export const GATEKEEPER_APP_ROUTES = {
 
 export type GatekeeperAppRoute = keyof typeof GATEKEEPER_APP_ROUTES;
 
+export const MAX_GATEKEEPER_APP_CONNECTIONS = 12;
+export const MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH = 40;
+const CONNECTION_REPORTING_GATEKEEPER_ID = "lisbeyond";
+
+export type GatekeeperAppConnection = {
+  id: string;
+  name: string;
+  state: "live" | "partial" | "off";
+  detail: string;
+};
+
+export function gatekeeperAppCanReportConnections(gatekeeperVendorId: string): boolean {
+  return gatekeeperVendorId === CONNECTION_REPORTING_GATEKEEPER_ID;
+}
+
+const CONNECTION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CONNECTION_STATES = new Set<GatekeeperAppConnection["state"]>([
+  "live",
+  "partial",
+  "off",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseGatekeeperAppConnection(value: unknown): GatekeeperAppConnection {
+  if (!isRecord(value)) throw new TypeError("Invalid gatekeeper app connection report.");
+  const { id, name, state, detail } = value;
+  if (
+    typeof id !== "string"
+    || id.length > MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH
+    || !CONNECTION_ID_PATTERN.test(id)
+    || typeof name !== "string"
+    || name.length === 0
+    || name.length > MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH
+    || typeof state !== "string"
+    || !CONNECTION_STATES.has(state as GatekeeperAppConnection["state"])
+    || typeof detail !== "string"
+    || detail.length === 0
+    || detail.length > MAX_GATEKEEPER_APP_CONNECTION_TEXT_LENGTH
+  ) {
+    throw new TypeError("Invalid gatekeeper app connection report.");
+  }
+  return { id, name, state: state as GatekeeperAppConnection["state"], detail };
+}
+
+/** Validates and reduces an untrusted connection summary reported by a sandboxed app. */
+export function parseGatekeeperAppConnections(value: unknown): GatekeeperAppConnection[] {
+  if (!Array.isArray(value) || value.length > MAX_GATEKEEPER_APP_CONNECTIONS) {
+    throw new TypeError("Invalid gatekeeper app connection report.");
+  }
+  return value.map(parseGatekeeperAppConnection);
+}
+
 // A Durable Object ID string, which is what a workspace ID is.
 const WORKSPACE_ID_PATTERN = /^[0-9a-f]{64}$/;
 

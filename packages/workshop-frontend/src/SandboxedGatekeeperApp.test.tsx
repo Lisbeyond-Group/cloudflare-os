@@ -18,6 +18,10 @@ import type {
   GatekeeperAppThemeReceiver,
 } from "@gadgets/workshop-shared/theme";
 import SandboxedGatekeeperApp from "./SandboxedGatekeeperApp";
+import {
+  RailConnectionsProvider,
+  useRailConnections,
+} from "./components/AppShell/railConnectionsContext";
 
 vi.mock("./ThemeContext", () => ({
   useTheme: () => ({ resolvedThemeMode: "light" }),
@@ -51,12 +55,18 @@ interface TestHost extends RpcTarget {
   openPrompt(prompt: string): Promise<void>;
   getAppRoute(): Promise<string | null>;
   openAppRoute(route: string): Promise<void>;
+  reportConnections(rows: unknown): Promise<void>;
 }
 
 class EmptyUi extends RpcTarget {}
 
 class TestThemeReceiver extends RpcTarget implements GatekeeperAppThemeReceiver {
   setTheme(_theme: GatekeeperAppTheme): void {}
+}
+
+function ConnectionsProbe() {
+  const { rows } = useRailConnections();
+  return <output data-testid="connections-report">{JSON.stringify(rows)}</output>;
 }
 
 describe("SandboxedGatekeeperApp navigation", () => {
@@ -82,11 +92,16 @@ describe("SandboxedGatekeeperApp navigation", () => {
       ui: new RpcStub(new EmptyUi()),
     } as unknown as GatekeeperUiFrame;
     const rootRoute = createRootRoute({
-      component: () => <SandboxedGatekeeperApp
-        frame={frame}
-        gatekeeperVendorId="scheduler"
-        appRoute="properties"
-      />,
+      component: () => (
+        <RailConnectionsProvider>
+          <SandboxedGatekeeperApp
+            frame={frame}
+            gatekeeperVendorId="lisbeyond"
+            appRoute="properties"
+          />
+          <ConnectionsProbe />
+        </RailConnectionsProvider>
+      ),
     });
     const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/" });
     const gadgetRoute = createRoute({
@@ -134,8 +149,18 @@ describe("SandboxedGatekeeperApp navigation", () => {
     await expect(host.subscribeTheme(themeReceiver)).resolves.toEqual({
       mode: "light",
       accentColor: "#7c3aed",
+      features: { connections: true },
     });
     await expect(host.getAppRoute()).resolves.toBe("properties");
+
+    await act(async () => {
+      await host!.reportConnections([
+        { id: "hostaway", name: "Hostaway", state: "live", detail: "Live" },
+      ]);
+    });
+    expect(container.querySelector('[data-testid="connections-report"]')?.textContent).toContain(
+      '"id":"hostaway"',
+    );
 
     await act(async () => {
       await host!.openWorkspace(WORKSPACE_ID, 2);
