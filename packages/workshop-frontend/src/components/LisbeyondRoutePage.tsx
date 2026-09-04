@@ -9,6 +9,7 @@ export type LisbeyondProductRoute =
   | 'portfolio'
   | 'portfolio/revenue-management'
   | 'portfolio/business-pulse'
+  | 'sales/new-leads'
   | 'workflows'
   | 'connections'
   | 'settings'
