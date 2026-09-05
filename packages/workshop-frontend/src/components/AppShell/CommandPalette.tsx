@@ -189,10 +189,10 @@ export default function CommandPalette({
         run: () => navigate({ to: '/portfolio' }),
       },
       {
-        id: 'nav-sales',
-        label: 'Sales · New Leads',
+        id: 'nav-new-leads',
+        label: 'Portfolio · New Leads',
         icon: <UsersThree size={15} />,
-        run: () => navigate({ to: '/sales/new-leads' }),
+        run: () => navigate({ to: '/portfolio/new-leads' }),
       },
       {
         id: 'nav-ask-bifana',
