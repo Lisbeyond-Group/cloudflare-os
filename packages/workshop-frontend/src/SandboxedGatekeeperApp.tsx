@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { RpcStub, RpcTarget, newMessagePortRpcSession } from 'capnweb'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import type { GatekeeperUiFrame } from '@gadgets/workshop-shared/gatekeeper'
 import type {
   GatekeeperAppTheme,
@@ -19,6 +19,8 @@ import {
   normalizeGatekeeperAppPrompt,
   parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
+  parseWorkflowRouteState,
+  type WorkflowRouteState,
   parseGatekeeperAppWorkspaceTarget,
   type GatekeeperAppConnection,
   type GatekeeperAppRoute,
@@ -95,6 +97,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #openAppRoute: OpenAppRoute
   readonly #resolveWorkspaceTitles: ResolveWorkspaceTitles
   readonly #reportConnections: ReportConnections
+  #getWorkflowRouteState: () => WorkflowRouteState
+  #setWorkflowRouteState: (state: WorkflowRouteState) => void
   #presenting = false
   #theme: GatekeeperAppTheme
   #themeReceiver: RpcStub<GatekeeperAppThemeReceiver> | null = null
@@ -114,6 +118,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     openAppRoute: OpenAppRoute,
     resolveWorkspaceTitles: ResolveWorkspaceTitles,
     reportConnections: ReportConnections,
+    getWorkflowRouteState: () => WorkflowRouteState,
+    setWorkflowRouteState: (state: WorkflowRouteState) => void,
   ) {
     super()
     this.#theme = theme
@@ -133,6 +139,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#openAppRoute = openAppRoute
     this.#resolveWorkspaceTitles = resolveWorkspaceTitles
     this.#reportConnections = reportConnections
+    this.#getWorkflowRouteState = getWorkflowRouteState
+    this.#setWorkflowRouteState = setWorkflowRouteState
   }
 
   get ui(): RpcStub<RpcTarget> {
@@ -173,6 +181,15 @@ class GatekeeperAppHostImpl extends RpcTarget {
 
   openAppRoute(route: unknown): void {
     this.#openAppRoute(parseGatekeeperAppRoute(route))
+  }
+
+  getWorkflowRouteState(): WorkflowRouteState {
+    return this.#appRoute === "workflows" ? this.#getWorkflowRouteState() : {}
+  }
+
+  setWorkflowRouteState(value: unknown): void {
+    if (this.#appRoute !== "workflows") throw new TypeError("Workflow navigation is unavailable here.")
+    this.#setWorkflowRouteState(parseWorkflowRouteState(value))
   }
 
   reportConnections(rows: unknown): void {
@@ -264,6 +281,12 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
   appRoute?: string | null,
 }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const routeStateRef = useRef<WorkflowRouteState>({})
+  routeStateRef.current = parseWorkflowRouteState(location.search)
+  const setWorkflowRouteState = useCallback((state: WorkflowRouteState) => {
+    void navigate({ to: "/workflows", search: state, replace: true })
+  }, [navigate])
   const { authenticatedApi } = useAuthenticatedApi()
   const { reportConnections } = useRailConnections()
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -395,6 +418,8 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
         openAppRoute,
         resolveWorkspaceTitles,
         acceptConnections,
+        () => routeStateRef.current,
+        setWorkflowRouteState,
       )
       hostRef.current = host
       sessionRef.current = newMessagePortRpcSession(port, host)
@@ -428,7 +453,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     // Re-establish the session if either the HTML or the `ui` capability changes, so a new frame
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
   }, [acceptConnections, appRoute, frame.iframeHtml, frame.ui, gatekeeperVendorId, openAppRoute,
-      openPrompt, openTarget, present, resolveWorkspaceTitles, setOverlayPhase])
+      openPrompt, openTarget, present, setWorkflowRouteState, resolveWorkspaceTitles, setOverlayPhase])
 
   return (
     <iframe
@@ -436,7 +461,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
       srcDoc={frame.iframeHtml}
       // allow-scripts: run the app's JS. allow-modals: its beforeunload unsaved-changes guard. Not
       // allow-same-origin (the frame stays an opaque origin), and the app's CSP keeps connect-src 'none'.
-      sandbox="allow-scripts allow-modals"
+      sandbox={gatekeeperVendorId === "lisbeyond" ? "allow-scripts allow-modals allow-downloads" : "allow-scripts allow-modals"}
       allow="clipboard-write"
       title="Gatekeeper app"
       style={iframeStyleForOverlay(overlay)}

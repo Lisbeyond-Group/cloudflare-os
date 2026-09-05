@@ -55,6 +55,8 @@ interface TestHost extends RpcTarget {
   resolveWorkspaceTitles(ids: string[]): Promise<(string | null)[]>;
   openPrompt(prompt: string): Promise<void>;
   getAppRoute(): Promise<string | null>;
+  getWorkflowRouteState(): Promise<Record<string, string>>;
+  setWorkflowRouteState(state: unknown): Promise<void>;
   openAppRoute(route: string): Promise<void>;
   reportConnections(rows: unknown): Promise<void>;
 }
@@ -85,6 +87,23 @@ describe("SandboxedGatekeeperApp navigation", () => {
     await act(async () => root?.unmount());
     container?.remove();
     vi.restoreAllMocks();
+  });
+
+  it("reads and updates bounded workflow URL state over the real host RPC", async () => {
+    const frame = { iframeHtml: "<!doctype html><title>Invoices</title>", ui: new RpcStub(new EmptyUi()) } as unknown as GatekeeperUiFrame;
+    const rootRoute = createRootRoute({ component: () => <RailConnectionsProvider><SandboxedGatekeeperApp frame={frame} gatekeeperVendorId="lisbeyond" appRoute="workflows" /></RailConnectionsProvider> });
+    const workflows = createRoute({ getParentRoute: () => rootRoute, path: "/workflows" });
+    const router = createRouter({ history: createMemoryHistory({ initialEntries: ["/workflows?workflow=renovations-invoice-intake&tab=invoices&status=awaiting_approval&item=fixture-1"] }), routeTree: rootRoute.addChildren([workflows]) });
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+    const iframe = container.querySelector("iframe")!;
+    expect(iframe.getAttribute("sandbox")).toBe("allow-scripts allow-modals allow-downloads");
+    const { port1, port2 } = new MessageChannel(); host = newMessagePortRpcSession<TestHost>(port1);
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "handshake" }, origin: "null", source: iframe.contentWindow, ports: [port2] }));
+    await expect(host.getWorkflowRouteState()).resolves.toEqual({ workflow: "renovations-invoice-intake", tab: "invoices", status: "awaiting_approval", item: "fixture-1" });
+    await act(async () => { await host!.setWorkflowRouteState({ workflow: "renovations-invoice-intake", tab: "activity", external: "https://evil.example" }); await vi.waitFor(() => expect(router.state.location.search).toEqual({ workflow: "renovations-invoice-intake", tab: "activity" })); });
+    await expect(host.getWorkflowRouteState()).resolves.toEqual({ workflow: "renovations-invoice-intake", tab: "activity" });
+    expect(router.state.location.pathname).toBe("/workflows");
   });
 
   it("provides the deployment theme and routes bounded iframe requests", async () => {
@@ -153,6 +172,8 @@ describe("SandboxedGatekeeperApp navigation", () => {
       features: { connections: true },
     });
     await expect(host.getAppRoute()).resolves.toBe("properties");
+    await expect(host.getWorkflowRouteState()).resolves.toEqual({});
+    await expect(host.setWorkflowRouteState({ item: "item-1" })).rejects.toThrow("Workflow navigation is unavailable here.");
 
     await act(async () => {
       await host!.reportConnections([
