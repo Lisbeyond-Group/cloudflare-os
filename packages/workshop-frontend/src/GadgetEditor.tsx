@@ -56,6 +56,14 @@ import WorkspaceOpenErrorPage from './components/WorkspaceOpenErrorPage'
 import { useWorkspaceOpen } from './useWorkspaceOpen'
 import { reportIssue } from './errorReporting'
 import GadgetExportMenu from './GadgetExportMenu'
+import {
+  clampWorkspaceChatWidth,
+  defaultWorkspaceChatWidth,
+  isCompactWorkspaceViewport,
+  resolveWorkspaceLayout,
+  useWorkspaceBodyWidth,
+  workspaceChatWidthFromPointer,
+} from './workspaceLayout'
 
 const NO_GADGETS: ReadonlySet<WorkpieceId> = new Set()
 
@@ -325,22 +333,20 @@ const CHAT_WIDTH_STORAGE_KEY = 'gadgets:workshop:chatWidth'
 // Keep the old key prefix so existing "open" / "closed" preferences can migrate lazily.
 const WORKSPACE_VIEW_STORAGE_KEY_PREFIX = 'gadgets:workshop:workspaceVisibility:'
 const APP_RAIL_EXPANDED_STORAGE_KEY = 'gadgets:workshop:appRailExpanded'
-const MIN_CHAT_WIDTH = 280
-const MIN_WORKSPACE_WIDTH = 400
-const DEFAULT_CHAT_WIDTH = 420
 const WORKSPACE_TRANSITION_MS = 200
 
 const isBrowser = typeof window !== 'undefined'
 
-function clampChatWidth(width: number) {
-  if (!isBrowser) return Math.max(MIN_CHAT_WIDTH, Math.min(DEFAULT_CHAT_WIDTH, width))
-  const max = Math.max(MIN_CHAT_WIDTH, window.innerWidth - MIN_WORKSPACE_WIDTH)
-  return Math.max(MIN_CHAT_WIDTH, Math.min(max, width))
+function clampChatWidth(width: number, availableWidth?: number) {
+  return clampWorkspaceChatWidth(
+    width,
+    availableWidth ?? (isBrowser ? window.innerWidth : 1440),
+  )
 }
 
 function getInitialChatWidth() {
-  if (!isBrowser) return DEFAULT_CHAT_WIDTH
-  const fallback = Math.min(DEFAULT_CHAT_WIDTH, Math.floor(window.innerWidth * 0.38))
+  if (!isBrowser) return defaultWorkspaceChatWidth(1440)
+  const fallback = defaultWorkspaceChatWidth(window.innerWidth)
   let parsed = NaN
   try {
     const stored = window.localStorage.getItem(CHAT_WIDTH_STORAGE_KEY)
@@ -481,6 +487,12 @@ export default function GadgetEditor() {
 
   // ── layout ───────────────────────────────────────────────────────────────────
   const [chatWidth, setChatWidth] = useState(getInitialChatWidth)
+  const {
+    body: workspaceBody,
+    bodyRef: workspaceBodyRef,
+    width: workspaceBodyWidth,
+  } = useWorkspaceBodyWidth(isBrowser ? window.innerWidth : 1440)
+  const compactWorkspaceLayout = isCompactWorkspaceViewport(workspaceBodyWidth)
   const chatWidthRef = useRef(chatWidth)
   const [isResizing, setIsResizing] = useState(false)
   const [activeTab, setActiveTab] = useState<RightTab>('app')
@@ -765,17 +777,20 @@ export default function GadgetEditor() {
     && visibleGadgets.length <= 1
   const hasAnyApps = allGadgets.length > 0
   const showingActivity = workspaceView?.mode === 'activity'
-  const showFullEditor = layoutModeReady && (
-    showingActivity || (hasAnyApps && (workspaceView === null ? !simpleMode : workspaceView.mode === 'app'))
-  )
-  const showOutputRail = layoutModeReady && hasAnyApps && !showFullEditor
+  const { showFullEditor, showOutputRail } = resolveWorkspaceLayout({
+    ready: layoutModeReady,
+    hasArtifacts: hasAnyApps,
+    view: workspaceView?.mode ?? null,
+  })
   const paneShowsActivity = showingActivity || activityClosing
   useEffect(() => {
     if (!activityClosing) return
     const timeout = window.setTimeout(() => setActivityClosing(false), WORKSPACE_TRANSITION_MS)
     return () => window.clearTimeout(timeout)
   }, [activityClosing])
-  const outputRailWidth = showOutputRail ? workpieceRailWidth : 0
+  const outputRailWidth = showOutputRail
+    ? compactWorkspaceLayout ? WORKPIECE_RAIL_COLLAPSED_WIDTH : workpieceRailWidth
+    : 0
   const workspaceTransitionClass = workspaceTransitionEnabled && !isResizing
     ? 'transition-[width,opacity] duration-200 ease-out'
     : ''
@@ -878,11 +893,10 @@ export default function GadgetEditor() {
     setWorkspaceTransitionEnabled(true)
     const returnView = activityReturnViewRef.current
     const returnShowsPane = returnView?.mode === 'app'
-      || (returnView === null && hasAnyApps && !simpleMode)
     setActivityClosing(!returnShowsPane)
     setWorkspaceView(returnView)
     activityReturnViewRef.current = null
-  }, [workspaceView, setWorkspaceVisibility, hasAnyApps, simpleMode])
+  }, [workspaceView, setWorkspaceVisibility])
 
   // Ignore the initial listing, then open apps created by the active chat.
   useEffect(() => {
@@ -912,12 +926,8 @@ export default function GadgetEditor() {
   }, [workpiecesReady, allGadgets, effectiveSelectedChatId, setWorkspaceVisibility, navigate, id])
 
   useEffect(() => {
-    const handleResize = () => {
-      setChatWidth(width => clampChatWidth(width))
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    setChatWidth(current => clampChatWidth(current, workspaceBodyWidth))
+  }, [workspaceBodyWidth])
 
   // ── chat count / auto-switch ─────────────────────────────────────────────────
   const handleChatCountChange = useCallback((count: number, chatZeroExists: boolean) => {
@@ -1066,23 +1076,25 @@ export default function GadgetEditor() {
   const handleResizePointerMove = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
-      setChatWidth(clampChatWidth(e.clientX))
+      const left = workspaceBody?.getBoundingClientRect().left ?? 0
+      setChatWidth(workspaceChatWidthFromPointer(e.clientX, left, workspaceBodyWidth))
     },
-    [],
+    [workspaceBody, workspaceBodyWidth],
   )
   const handleResizePointerUp = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId)
       }
+      const left = workspaceBody?.getBoundingClientRect().left ?? 0
       const width = e.type === 'pointercancel'
         ? chatWidthRef.current
-        : clampChatWidth(e.clientX)
+        : workspaceChatWidthFromPointer(e.clientX, left, workspaceBodyWidth)
       setChatWidth(width)
       persistChatWidth(width)
       setIsResizing(false)
     },
-    [persistChatWidth],
+    [persistChatWidth, workspaceBody, workspaceBodyWidth],
   )
 
   useEffect(() => {
@@ -1456,7 +1468,7 @@ export default function GadgetEditor() {
       </div>
 
       {/* ═══ BODY ═════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-1 min-h-0 relative overflow-hidden">
+      <div ref={workspaceBodyRef} className="flex flex-1 min-h-0 relative overflow-hidden">
 
         {isAgentActive && (
           <div
@@ -1471,10 +1483,12 @@ export default function GadgetEditor() {
 
         {/* ── LEFT: Chat pane ──────────────────────────────────────────────────── */}
         <div
-          className={`flex flex-col flex-shrink-0 ${workspaceTransitionClass} ${showFullEditor ? 'border-r border-kumo-line' : ''}`}
+          className={`flex min-w-0 flex-col flex-shrink-0 overflow-hidden ${workspaceTransitionClass} ${showFullEditor && !compactWorkspaceLayout ? 'border-r border-kumo-line' : ''}`}
+          aria-hidden={showFullEditor && compactWorkspaceLayout ? true : undefined}
+          inert={showFullEditor && compactWorkspaceLayout ? true : undefined}
           style={{
             width: showFullEditor
-              ? chatWidth
+              ? compactWorkspaceLayout ? 0 : chatWidth
               : `calc(100% - ${outputRailWidth}px)`,
           }}
         >
@@ -1534,7 +1548,7 @@ export default function GadgetEditor() {
         {/* ── Resize handle ───────────────────────────────────────────────────── */}
         <div
           className={`flex-shrink-0 overflow-visible bg-kumo-line cursor-col-resize relative touch-none ${workspaceTransitionClass}`}
-          style={{ width: showFullEditor ? 1 : 0 }}
+          style={{ width: showFullEditor && !compactWorkspaceLayout ? 1 : 0 }}
           onPointerDown={handleResizePointerDown}
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}
@@ -1546,8 +1560,12 @@ export default function GadgetEditor() {
         {/* ── RIGHT: App / Code / Connections tabs ───────────────────────────── */}
         <div
           className={`flex flex-shrink-0 min-w-0 overflow-hidden bg-kumo-base ${workspaceTransitionClass}`}
+          aria-hidden={!showFullEditor ? true : undefined}
+          inert={!showFullEditor ? true : undefined}
           style={{
-            width: showFullEditor ? `calc(100% - ${chatWidth}px - 1px)` : 0,
+            width: showFullEditor
+              ? compactWorkspaceLayout ? '100%' : `calc(100% - ${chatWidth}px - 1px)`
+              : 0,
             opacity: showFullEditor ? 1 : 0,
           }}
         >
@@ -1556,7 +1574,7 @@ export default function GadgetEditor() {
             className="flex items-center gap-2 border-b border-kumo-line px-3 flex-shrink-0"
             style={{ height: TABBAR_H }}
           >
-            <div className="flex min-w-0 flex-1 items-center overflow-hidden">
+            <div className="hidden min-w-0 flex-1 items-center overflow-hidden sm:flex">
               {paneShowsActivity ? (
                 <PaneLabel icon={Pulse} title="Activity" />
               ) : visibleGadgets.length > 1 ? (
@@ -1574,7 +1592,7 @@ export default function GadgetEditor() {
               )}
             </div>
 
-            <div className="flex flex-shrink-0 items-center gap-1.5">
+            <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
               <div className="flex items-center rounded-lg border border-kumo-line p-0.5">
                 {paneShowsActivity
                   ? ACTIVITY_TABS.map(tab => (
@@ -1728,7 +1746,7 @@ export default function GadgetEditor() {
             selectedId={null}
             agentEditingId={streamingActiveFile?.workpieceId ?? null}
             hookedGadgetIds={hookedGadgetIds}
-            expanded={workpieceRailExpanded}
+            expanded={compactWorkspaceLayout ? false : workpieceRailExpanded}
             onExpandedChange={handleWorkpieceRailExpandedChange}
             onSelect={handleSelectWorkpiece}
             onRename={handleRenameWorkpiece}
