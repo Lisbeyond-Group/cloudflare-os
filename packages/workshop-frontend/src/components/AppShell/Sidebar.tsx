@@ -15,7 +15,6 @@ import { openCommandPalette } from './commandPaletteBus'
 import SidebarItem from './SidebarItem'
 import {
   SidebarWorkspacesProvider,
-  SidebarWorkspacesTools,
   SidebarWorkspacesLists,
 } from './SidebarWorkspaces'
 import SidebarUtilityStrip from './SidebarUtilityStrip'
@@ -28,8 +27,8 @@ import RailConnections from './RailConnections'
  *
  * Layout (top → bottom):
  *   • brand row                            pinned
+ *   • search                               pinned
  *   • primary Lisbeyond navigation         pinned
- *   • workspace tools (⌘K search)          pinned
  *   • Favorites / Recent workspaces        SCROLLS
  *   • connection status                    pinned
  *   • utility strip (theme, settings, avatar) pinned
@@ -52,74 +51,63 @@ export default function Sidebar({
         'shrink-0 transition-[width] duration-200 ease-out',
       ].join(' ')}
     >
-      {/* Brand row */}
-      <div
-        className={[
-          'flex shrink-0',
-          collapsed
-            ? 'h-14 items-center justify-center px-1.5'
-            : 'h-[100px] items-start justify-between gap-2 px-2 pt-[26px]',
-        ].join(' ')}
-      >
+      <div className="flex h-14 shrink-0 items-center px-2">
         {collapsed ? (
-          <Link to="/" aria-label={siteName} className="flex h-10 w-10 items-center justify-center">
-            <span className="relative block h-7 w-7 overflow-hidden">
-              <SiteLogo
-                size={68}
-                srcOverride="/brand/lisbeyond-lockup-beige.svg"
-                className="absolute left-1/2 top-0 h-auto w-[68px] max-w-none -translate-x-1/2"
-              >
-                <Hexagon size={28} weight="bold" className="shrink-0 text-lb-rail-ink" />
-              </SiteLogo>
-            </span>
-          </Link>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="press flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-lb-rail-muted transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
+          >
+            <SidebarSimple size={16} className="rotate-180" />
+          </button>
         ) : (
-          <Link to="/" aria-label={siteName} className="flex min-w-0 items-start">
+          <Link to="/" aria-label={siteName} className="flex h-10 min-w-0 flex-1 items-center">
             <SiteLogo
-              size={112}
-              srcOverride="/brand/lisbeyond-lockup-beige.svg"
-              className="h-auto w-[112px] shrink-0"
+              size={164}
+              srcOverride="/brand/lisbeyond-lockup-horizontal-beige.svg"
+              className="h-auto w-[164px] max-w-full shrink-0"
             >
               <Hexagon size={24} weight="bold" className="shrink-0 text-lb-rail-ink" />
             </SiteLogo>
           </Link>
         )}
         {!collapsed && (
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => openCommandPalette()}
-              aria-label="Search"
-              title="Search (⌘K)"
-              className="press flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-lb-rail-muted transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
-            >
-              <MagnifyingGlass size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={onToggleCollapsed}
-              aria-label="Collapse sidebar"
-              title="Collapse sidebar"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-lb-rail-muted transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
-            >
-              <SidebarSimple size={15} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="press flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-lb-rail-muted transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
+          >
+            <SidebarSimple size={16} />
+          </button>
         )}
       </div>
 
-      {/* Expand affordance when collapsed — placed just under the logo for discoverability. */}
-      {collapsed && (
+      <div className={collapsed ? 'flex shrink-0 justify-center px-2' : 'shrink-0 px-2'}>
         <button
           type="button"
-          onClick={onToggleCollapsed}
-          aria-label="Expand sidebar"
-          title="Expand sidebar"
-          className="mx-auto mt-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-lb-rail-muted transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label"
+          onClick={() => openCommandPalette()}
+          aria-label="Search"
+          title="Search (⌘K)"
+          className={[
+            'press flex h-10 cursor-pointer items-center rounded-lg text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11',
+            collapsed ? 'w-10 justify-center max-md:w-11' : 'w-full gap-2 bg-lb-rail-active/50 px-3',
+          ].join(' ')}
         >
-          <SidebarSimple size={15} className="rotate-180" />
+          <MagnifyingGlass size={16} className="shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left text-[13px] font-medium">Search</span>
+              <kbd className="rounded bg-lb-rail-active px-1.5 py-0.5 font-sans text-[10px] text-lb-rail-muted">
+                ⌘K
+              </kbd>
+            </>
+          )}
         </button>
-      )}
+      </div>
 
       <SidebarWorkspacesProvider>
         {/* Pinned top stack. shrink-0 keeps it from squishing when the lists below grow. */}
@@ -158,9 +146,6 @@ export default function Sidebar({
               collapsed={collapsed}
             />
           </nav>
-
-          {/* Workspace tools: search. Pinned so it's always reachable. */}
-          <SidebarWorkspacesTools collapsed={collapsed} />
         </div>
 
         {/* Scrolling middle: only the Favorites / Recent workspaces / Recent blueprints lists.

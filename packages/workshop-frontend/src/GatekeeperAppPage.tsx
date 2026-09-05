@@ -108,9 +108,10 @@ export default function GatekeeperAppPage({ appId, appRoute = null }: {
     return <div className="px-4 py-16 text-center text-sm text-kumo-subtle">Loading…</div>
   }
 
-  // Fill the viewport below the header so the embedded app can manage its own internal layout.
+  // Fill the shell's available space. Its mobile/announcement header is optional; subtracting a
+  // fixed header height here would leave an empty strip below desktop pages.
   return (
-    <div style={{ height: 'calc(100vh - 56px)' }}>
+    <div className="h-full">
       <SandboxedGatekeeperApp
         key={appRoute ?? 'default'}
         frame={state.frame}

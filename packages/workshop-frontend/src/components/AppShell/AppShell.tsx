@@ -4,6 +4,7 @@ import { List, X } from '@phosphor-icons/react'
 import TopBarNotice from '../../TopBarNotice'
 import ReconnectingChip from '../ReconnectingChip'
 import { useConnectionLost } from '../../RpcContext'
+import { useServerConfig } from '../../ServerConfigContext'
 import Sidebar from './Sidebar'
 import CommandPalette from './CommandPalette'
 import { OPEN_COMMAND_PALETTE_EVENT } from './commandPaletteBus'
@@ -21,8 +22,8 @@ function readCollapsed(): boolean {
 }
 
 /**
- * The authenticated, non-fullscreen application chrome: a persistent left rail + a thin top notice
- * strip + the routed content. Replaces the old <Header /> on these routes. Chat and Gadget editor
+ * The authenticated, non-fullscreen application chrome: a persistent left rail and routed content.
+ * Desktop reserves a notice row only when there is an announcement. Chat and Gadget editor
  * pages are still rendered fullscreen by __root.tsx without this shell.
  *
  * Mobile: below `md` the rail collapses to an overlay drawer triggered by a hamburger button in a
@@ -34,6 +35,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const connectionLost = useConnectionLost()
+  const hasAnnouncement = Boolean(useServerConfig()?.announcement?.trim())
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -102,31 +104,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main column */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar. Same height as the sidebar's brand row (h-14) so they read as one continuous
-            chrome strip across the top. Mostly empty — carries the mobile hamburger on the left,
-            any admin TopBarNotice centered, and the reconnecting chip on the right. */}
-        <div className="relative flex h-14 shrink-0 items-center justify-between border-b border-kumo-line bg-kumo-base px-3">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {/* Mobile needs a menu button. Desktop starts at the routed page's own header unless
+            there is an actual announcement; never reserve an empty chrome row. */}
+        <div className={`flex min-h-14 shrink-0 items-center border-b border-kumo-line bg-kumo-base px-3 ${hasAnnouncement ? '' : 'md:hidden'}`}>
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-kumo-default transition-colors hover:bg-kumo-tint md:hidden"
+            aria-expanded={mobileOpen}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-kumo-default transition-colors hover:bg-kumo-tint md:hidden"
           >
             {mobileOpen ? <X size={16} /> : <List size={16} />}
           </button>
-          <TopBarNotice />
-          {/* `ml-auto` rather than the container's `justify-between`: on desktop the hamburger is
-              hidden, leaving this the only in-flow child, which `justify-between` would park on the
-              left. */}
-          <div className="ml-auto flex items-center gap-2">
+          <TopBarNotice inline />
+          <div className="ml-auto flex items-center gap-2 md:hidden">
             {connectionLost && <ReconnectingChip />}
-            <span aria-hidden="true" className="h-7 w-7 md:hidden" />
           </div>
         </div>
 
         {/* Routed content. Flat enterprise canvas — no texture. */}
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+        {connectionLost && (
+          <div className="pointer-events-none absolute bottom-4 right-4 z-30 hidden md:block">
+            <ReconnectingChip />
+          </div>
+        )}
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />

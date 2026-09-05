@@ -13,10 +13,8 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
   CaretDown,
-  MagnifyingGlass,
   Star,
 } from '@phosphor-icons/react'
-import { openCommandPalette } from './commandPaletteBus'
 import { useKumoToastManager } from '@cloudflare/kumo'
 import type { RpcStub } from 'capnweb'
 import {
@@ -34,9 +32,7 @@ import { RailLabel } from './RailConnections'
 const RECENT_INITIAL_LIMIT = 4
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shape of the workspaces state shared between the rail's pinned tools (search) and the scrolling
-// lists (Favorites / Recent workspaces). Centralized here so both sibling components subscribe to
-// the same data and the dialog state has a single owner.
+// Shape of the workspace state shared by the scrolling lists and their dialogs.
 // ─────────────────────────────────────────────────────────────────────────────
 type WorkspacesContextValue = {
   // Search query, lifted up so the input lives in the pinned area but filters the scrolling lists.
@@ -65,8 +61,7 @@ function useWorkspacesContext(): WorkspacesContextValue {
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * Provider: owns all the data + mutation handlers, plus the share / delete dialogs. Renders its
- * children inside its context so SidebarWorkspacesTools and SidebarWorkspacesLists can be placed
- * independently in the parent layout (pinned vs. scrolling areas).
+ * children inside its context so the lists and their dialogs share one owner.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export function SidebarWorkspacesProvider({ children }: { children: ReactNode }) {
@@ -257,33 +252,6 @@ export function SidebarWorkspacesProvider({ children }: { children: ReactNode })
         />
       )}
     </WorkspacesContext.Provider>
-  )
-}
-
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * Tools (search). Lives in the rail's pinned-top area so it stays put while the lists below scroll.
- * Only renders in collapsed mode — see the note below.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-export function SidebarWorkspacesTools({ collapsed = false }: { collapsed?: boolean }) {
-  // No "New workspace" button: Home *is* the new-workspace launcher, so it would be redundant.
-  // Search lives as a magnifying-glass icon in the brand row when expanded; when collapsed the
-  // brand-row buttons are hidden, so we surface a compact search icon here instead.
-  if (!collapsed) return null
-
-  return (
-    <div className="flex flex-col items-center px-2">
-      <button
-        type="button"
-        onClick={() => openCommandPalette()}
-        aria-label="Search"
-        title="Search (⌘K)"
-        className="press flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-rail-label max-md:h-11 max-md:w-11"
-      >
-        <MagnifyingGlass size={15} />
-      </button>
-    </div>
   )
 }
 
