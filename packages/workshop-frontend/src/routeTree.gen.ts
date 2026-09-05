@@ -322,6 +322,7 @@ export interface FileRouteTypes {
     | '/gadget/$id'
     | '/gatekeepers_/$appId'
     | '/portfolio_/business-pulse'
+    | '/portfolio_/new-leads'
     | '/portfolio_/revenue-management'
     | '/sales_/new-leads'
     | '/workspace/$id'
