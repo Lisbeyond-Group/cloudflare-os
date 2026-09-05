@@ -110,15 +110,14 @@ describe('Console v3 sidebar', () => {
       .toBe('true')
   })
 
-  it('renders six primary items and moves Connections out of primary navigation', async () => {
+  it('renders five primary items and moves Connections out of primary navigation', async () => {
     const view = await renderSidebar()
     const navLinks = [...view.querySelectorAll('nav a')]
-    expect(navLinks).toHaveLength(6)
+    expect(navLinks).toHaveLength(5)
     expect(navLinks.map((link) => link.textContent)).toEqual([
       'Home',
       'Properties',
       'Portfolio',
-      'Sales',
       'Ask Bifana',
       'Workflows',
     ])

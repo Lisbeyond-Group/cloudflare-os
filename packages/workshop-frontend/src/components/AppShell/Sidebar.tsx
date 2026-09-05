@@ -8,7 +8,6 @@ import {
   Lightning,
   MagnifyingGlass,
   SidebarSimple,
-  UsersThree,
 } from '@phosphor-icons/react'
 import { useSiteName } from '../../ServerConfigContext'
 import SiteLogo from '../SiteLogo'
@@ -142,13 +141,8 @@ export default function Sidebar({
             <SidebarItem
               to="/portfolio"
               label="Portfolio"
+              matchPrefix
               icon={<ChartPieSlice size={14} weight="regular" />}
-              collapsed={collapsed}
-            />
-            <SidebarItem
-              to="/sales/new-leads"
-              label="Sales"
-              icon={<UsersThree size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem

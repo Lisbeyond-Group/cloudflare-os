@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import LisbeyondRoutePage from '../components/LisbeyondRoutePage'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/sales_/new-leads')({
-  component: () => <LisbeyondRoutePage route="sales/new-leads" title="New Leads" />,
+  beforeLoad: () => {
+    throw redirect({ to: '/portfolio/new-leads', search: true, hash: true, replace: true })
+  },
+  component: () => null,
 })
