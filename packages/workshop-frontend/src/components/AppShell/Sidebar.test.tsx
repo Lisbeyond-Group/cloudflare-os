@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Sidebar from './Sidebar'
+import { openCommandPalette } from './commandPaletteBus'
 import {
   RailConnectionsProvider,
   useRailConnections,
@@ -26,7 +27,6 @@ vi.mock('../SiteLogo', () => ({
 vi.mock('./commandPaletteBus', () => ({ openCommandPalette: vi.fn<() => void>() }))
 vi.mock('./SidebarWorkspaces', () => ({
   SidebarWorkspacesProvider: ({ children }: { children: React.ReactNode }) => children,
-  SidebarWorkspacesTools: () => null,
   SidebarWorkspacesLists: () => null,
 }))
 vi.mock('./SidebarUtilityStrip', () => ({ default: () => null }))
@@ -59,15 +59,17 @@ function ConnectionsReporter({ rows }: { rows: RailConnection[] }) {
 async function renderSidebar({
   collapsed = false,
   rows,
+  onToggleCollapsed = () => {},
 }: {
   collapsed?: boolean
   rows?: RailConnection[]
+  onToggleCollapsed?: () => void
 } = {}) {
   const rootRoute = createRootRoute({
     component: () => (
       <RailConnectionsProvider>
         {rows && <ConnectionsReporter rows={rows} />}
-        <Sidebar collapsed={collapsed} onToggleCollapsed={() => {}} />
+        <Sidebar collapsed={collapsed} onToggleCollapsed={onToggleCollapsed} />
       </RailConnectionsProvider>
     ),
   })
@@ -108,6 +110,48 @@ describe('Console v3 sidebar', () => {
     const collapsed = await renderSidebar({ collapsed: true })
     expect(collapsed.querySelector('aside[aria-label="Primary"]')?.getAttribute('data-collapsed'))
       .toBe('true')
+  })
+
+  it('opens the existing command palette from labeled and collapsed search controls', async () => {
+    const expanded = await renderSidebar()
+    const expandedSearch = expanded.querySelector<HTMLButtonElement>('button[aria-label="Search"]')
+    expect(expandedSearch?.textContent).toContain('Search')
+    expect(expandedSearch?.textContent).toContain('⌘K')
+    await act(async () => expandedSearch?.click())
+    expect(openCommandPalette).toHaveBeenCalledTimes(1)
+
+    await act(async () => root?.unmount())
+    container?.remove()
+    root = undefined
+    container = undefined
+
+    const collapsed = await renderSidebar({ collapsed: true })
+    const collapsedSearch = collapsed.querySelector<HTMLButtonElement>('button[aria-label="Search"]')
+    expect(collapsedSearch?.textContent).toBe('')
+    await act(async () => collapsedSearch?.click())
+    expect(openCommandPalette).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses the horizontal brand and exposes collapse controls in both states', async () => {
+    const onToggleCollapsed = vi.fn<() => void>()
+    const expanded = await renderSidebar({ onToggleCollapsed })
+    expect(expanded.querySelector('img')?.getAttribute('src'))
+      .toBe('/brand/lisbeyond-lockup-horizontal-beige.svg')
+    await act(async () => {
+      expanded.querySelector<HTMLButtonElement>('button[aria-label="Collapse sidebar"]')?.click()
+    })
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(1)
+
+    await act(async () => root?.unmount())
+    container?.remove()
+    root = undefined
+    container = undefined
+
+    const collapsed = await renderSidebar({ collapsed: true, onToggleCollapsed })
+    await act(async () => {
+      collapsed.querySelector<HTMLButtonElement>('button[aria-label="Expand sidebar"]')?.click()
+    })
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(2)
   })
 
   it('renders five primary items and moves Connections out of primary navigation', async () => {

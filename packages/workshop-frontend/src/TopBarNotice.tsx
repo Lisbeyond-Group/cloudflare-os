@@ -9,6 +9,8 @@ import { useServerConfig } from './ServerConfigContext'
  * Designed to be placed inside a flex container that has `position: relative`; it absolutely-centers
  * itself so it doesn't affect the left/right layout. Hidden below the `lg` breakpoint where it would
  * crowd the bar.
+ * `inline` instead participates in normal flow, including on mobile, for the app shell's optional
+ * announcement row. An empty notice never reserves space.
  */
 
 // Render the notice as a single inline run: paragraphs collapse to plain inline content and links
@@ -28,7 +30,7 @@ const INLINE_MARKDOWN_COMPONENTS: Components = {
   ),
 }
 
-export default function TopBarNotice() {
+export default function TopBarNotice({ inline = false }: { inline?: boolean }) {
   const notice = (useServerConfig()?.announcement ?? '').trim()
 
   if (!notice) return null
@@ -36,9 +38,11 @@ export default function TopBarNotice() {
   return (
     <div
       aria-hidden="false"
-      className="hidden lg:flex absolute inset-0 items-center justify-center pointer-events-none px-40"
+      className={inline
+        ? 'min-w-0 flex-1 px-3 text-center'
+        : 'hidden lg:flex absolute inset-0 items-center justify-center pointer-events-none px-40'}
     >
-      <div className="max-w-full truncate text-[13px] leading-[18px] font-normal tracking-[-0.25px] text-kumo-subtle">
+      <div className={`${inline ? 'py-2 break-words' : 'truncate'} max-w-full text-[13px] leading-[18px] font-normal tracking-[-0.25px] text-kumo-subtle`}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={INLINE_MARKDOWN_COMPONENTS}>
           {notice}
         </ReactMarkdown>
