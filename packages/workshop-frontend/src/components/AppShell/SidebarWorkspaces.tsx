@@ -31,7 +31,7 @@ import SidebarGadgetRow from './SidebarGadgetRow'
 import { RailLabel } from './RailConnections'
 
 // Cap on items shown in the Recent list before the user clicks through to /workspaces.
-const RECENT_INITIAL_LIMIT = 6
+const RECENT_INITIAL_LIMIT = 4
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shape of the workspaces state shared between the rail's pinned tools (search) and the scrolling
@@ -332,19 +332,15 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
 
   return (
     <div className="flex flex-col pb-3">
-      {/* Saved conversations */}
-      <SidebarSection
-        label="Saved chats"
-        count={favorites.length}
-        open={favOpen}
-        onToggle={() => setFavOpen((o) => !o)}
-        icon={<Star size={12} weight="regular" className="text-lb-rail-label" />}
-      >
-        {favorites.length === 0 ? (
-          <p className="px-2.5 py-1.5 text-[12px] leading-4 tracking-[-0.2px] text-lb-rail-muted">
-            Save a conversation to keep it here.
-          </p>
-        ) : (
+      {/* Saved conversations stay fully visible when present; an empty group adds no value. */}
+      {favorites.length > 0 && (
+        <SidebarSection
+          label="Saved chats"
+          count={favorites.length}
+          open={favOpen}
+          onToggle={() => setFavOpen((o) => !o)}
+          icon={<Star size={12} weight="regular" className="text-lb-rail-label" />}
+        >
           <div className="flex flex-col">
             {favorites.map((g) => (
               <SidebarGadgetRow
@@ -357,8 +353,8 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
               />
             ))}
           </div>
-        )}
-      </SidebarSection>
+        </SidebarSection>
+      )}
 
       {/* Recent conversations — no count here; the "Show all (N)" link already carries it. */}
       <SidebarSection
@@ -421,7 +417,7 @@ function SidebarSection({
   children: ReactNode
 }) {
   return (
-    <div className="mt-3 flex flex-col px-2">
+    <div className="mt-2 flex flex-col px-2">
       <button
         type="button"
         onClick={onToggle}

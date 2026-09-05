@@ -145,7 +145,7 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
 
   return (
     <div className="relative isolate flex min-h-full w-full flex-col items-center justify-start bg-kumo-base px-4 pb-16 pt-10 sm:px-8 sm:pt-16 lg:pt-20">
-      <div className="flex w-full max-w-2xl flex-col items-stretch gap-8">
+      <div className="flex w-full max-w-[920px] flex-col items-stretch gap-8">
         <header className="text-center">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-kumo-brand">
             Lisbeyond's operational assistant
