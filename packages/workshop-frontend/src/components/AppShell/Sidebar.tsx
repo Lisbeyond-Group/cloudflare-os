@@ -141,6 +141,7 @@ export default function Sidebar({
             <SidebarItem
               to="/portfolio"
               label="Portfolio"
+              matchPrefix
               icon={<ChartPieSlice size={14} weight="regular" />}
               collapsed={collapsed}
             />

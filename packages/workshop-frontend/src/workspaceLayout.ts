@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useState } from 'react'
+
 export const DESKTOP_WORKSPACE_BREAKPOINT = 1024
 export const MIN_CHAT_WIDTH = 480
 export const MIN_WORKSPACE_WIDTH = 480
@@ -62,4 +64,3 @@ export function useWorkspaceBodyWidth(initialWidth: number) {
 
   return { body, bodyRef, width }
 }
-import { useCallback, useEffect, useState } from 'react'
