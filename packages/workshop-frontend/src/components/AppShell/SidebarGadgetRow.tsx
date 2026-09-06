@@ -4,6 +4,7 @@ import { DropdownMenu } from '@cloudflare/kumo'
 import { MENU_CONTENT, MENU_ITEM, MENU_ITEM_DANGER, MENU_POSITIONER_STYLE } from '../menuStyles'
 import { useState, useEffect, useRef } from 'react'
 import type { GadgetMetadataWithTimestamps } from '@gadgets/workshop-shared/api'
+import { EMPLOYEE_CONVERSATION_SEARCH } from '../../employeeConversationRoute'
 
 function conversationTitle(title: string | undefined): string {
   const trimmed = title?.trim()
@@ -55,6 +56,7 @@ export default function SidebarGadgetRow({
     <Link
       to="/workspace/$id"
       params={{ id: gadget.id }}
+      search={EMPLOYEE_CONVERSATION_SEARCH}
       className={[
         'group flex h-10 items-center rounded-lg text-[13px] leading-[18px] tracking-[-0.25px] text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:h-11',
         collapsed ? 'w-10 justify-center max-md:w-11' : 'gap-2 pl-1.5 pr-1',

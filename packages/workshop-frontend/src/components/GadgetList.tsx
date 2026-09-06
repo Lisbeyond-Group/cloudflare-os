@@ -10,6 +10,7 @@ import { BindingBadge, getGradient as getBlueprintGradient, uniqueBindingBadges 
 import { MENU_CONTENT, MENU_ITEM, MENU_ITEM_DANGER } from './menuStyles'
 import { BlueprintPreviewImage } from './BlueprintPreviewImage'
 import DeleteConfirmationDialog from './DeleteConfirmationDialog'
+import { EMPLOYEE_CONVERSATION_SEARCH } from '../employeeConversationRoute'
 
 // Neutral monogram for a workspace — matches the sidebar treatment (no per-item color noise).
 function initials(title: string | undefined): string {
@@ -47,6 +48,7 @@ function AppRow({
   onInfo,
   onTogglePin,
   onRename,
+  employeeConversation,
 }: {
   gadget: GadgetMetadataWithTimestamps
   onDelete: (gadget: GadgetMetadataWithTimestamps) => void
@@ -54,6 +56,7 @@ function AppRow({
   onInfo: (gadget: GadgetMetadataWithTimestamps) => void
   onTogglePin: (gadget: GadgetMetadataWithTimestamps) => void
   onRename: (gadget: GadgetMetadataWithTimestamps, newTitle: string) => void
+  employeeConversation: boolean
 }) {
   const displayTitle = conversationTitle(gadget.title)
   const [isRenaming, setIsRenaming] = useState(false)
@@ -81,6 +84,7 @@ function AppRow({
     <Link
       to="/workspace/$id"
       params={{ id: gadget.id }}
+      search={employeeConversation ? EMPLOYEE_CONVERSATION_SEARCH : undefined}
       className="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 ease-out hover:bg-kumo-tint"
       onClick={(e) => {
         // Prevent navigation when renaming or clicking the menu
@@ -173,7 +177,13 @@ function AppRow({
   )
 }
 
-export default function GadgetList({ showHeader = true }: { showHeader?: boolean } = {}) {
+export default function GadgetList({
+  showHeader = true,
+  employeeConversation = false,
+}: {
+  showHeader?: boolean
+  employeeConversation?: boolean
+} = {}) {
   const { authenticatedApi } = useAuthenticatedApi()
   const toasts = useKumoToastManager()
   const [gadgets, setGadgets] = useState<GadgetMetadataWithTimestamps[]>([])
@@ -398,6 +408,7 @@ export default function GadgetList({ showHeader = true }: { showHeader?: boolean
             <AppRow
               key={gadget.id}
               gadget={gadget}
+              employeeConversation={employeeConversation}
               onDelete={handleDelete}
               onShare={handleShare}
               onInfo={setInfoTarget}

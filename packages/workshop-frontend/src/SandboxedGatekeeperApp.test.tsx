@@ -20,6 +20,7 @@ import type {
   GatekeeperChatModelState,
 } from "@gadgets/workshop-shared/theme";
 import SandboxedGatekeeperApp from "./SandboxedGatekeeperApp";
+import { parsePropertyRouteState } from "./gatekeeperAppNavigation";
 import {
   RailConnectionsProvider,
   useRailConnections,
@@ -69,6 +70,8 @@ interface TestHost extends RpcTarget {
   getAppRoute(): Promise<string | null>;
   getWorkflowRouteState(): Promise<Record<string, string>>;
   setWorkflowRouteState(state: unknown): Promise<void>;
+  getPropertyRouteState(): Promise<Record<string, unknown>>;
+  setPropertyRouteState(state: unknown, mode: unknown): Promise<void>;
   openAppRoute(route: string): Promise<void>;
   reportConnections(rows: unknown): Promise<void>;
   getChatModelState(): Promise<GatekeeperChatModelState>;
@@ -125,6 +128,28 @@ describe("SandboxedGatekeeperApp navigation", () => {
     await act(async () => { await host!.setWorkflowRouteState({ workflow: "renovations-invoice-intake", tab: "activity", external: "https://evil.example" }); await vi.waitFor(() => expect(router.state.location.search).toEqual({ workflow: "renovations-invoice-intake", tab: "activity" })); });
     await expect(host.getWorkflowRouteState()).resolves.toEqual({ workflow: "renovations-invoice-intake", tab: "activity" });
     expect(router.state.location.pathname).toBe("/workflows");
+  });
+
+  it("pushes property detail after saving list state and remounts on browser Back", async () => {
+    const frame = { iframeHtml: "<!doctype html><title>Properties</title>", ui: new RpcStub(new EmptyUi()) } as unknown as GatekeeperUiFrame;
+    const rootRoute = createRootRoute({ component: () => <RailConnectionsProvider><SandboxedGatekeeperApp frame={frame} gatekeeperVendorId="lisbeyond" appRoute="properties" /></RailConnectionsProvider> });
+    const properties = createRoute({ getParentRoute: () => rootRoute, path: "/properties", validateSearch: parsePropertyRouteState });
+    const router = createRouter({ history: createMemoryHistory({ initialEntries: ["/properties?q=river&region=Lisbon&scroll=620"] }), routeTree: rootRoute.addChildren([properties]) });
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+    const initialIframe = container.querySelector("iframe")!;
+    const { port1, port2 } = new MessageChannel(); host = newMessagePortRpcSession<TestHost>(port1);
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "handshake" }, origin: "null", source: initialIframe.contentWindow, ports: [port2] }));
+    await expect(host.getPropertyRouteState()).resolves.toEqual({ q: "river", region: "Lisbon", scroll: 620 });
+
+    await host.setPropertyRouteState({ property: "p0478", tab: "guide", q: "river", region: "Lisbon", scroll: 620 }, "push");
+    await vi.waitFor(() => expect(router.state.location.search).toEqual({ property: "P0478", tab: "guide", q: "river", region: "Lisbon", scroll: 620 }));
+    const detailIframe = container.querySelector("iframe")!;
+    expect(detailIframe).not.toBe(initialIframe);
+
+    await act(async () => router.history.back());
+    await vi.waitFor(() => expect(router.state.location.search).toEqual({ q: "river", region: "Lisbon", scroll: 620 }));
+    expect(container.querySelector("iframe")).not.toBe(detailIframe);
   });
 
   it("provides the deployment theme and routes bounded iframe requests", async () => {

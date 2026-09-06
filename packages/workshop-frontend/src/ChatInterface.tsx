@@ -227,13 +227,13 @@ const CHAT_LIST_SCOPE_LABELS: Record<ChatListScope, string> = {
 
 const SHOW_THINKING_TRACES_KEY = "showThinkingTraces";
 
-function getStoredShowThinkingTraces(): boolean {
+export function getStoredShowThinkingTraces(): boolean {
   try {
     // Clean up the key this setting replaced.
     window.localStorage.removeItem("expandReasoningByDefault");
-    return window.localStorage.getItem(SHOW_THINKING_TRACES_KEY) !== "false";
+    return window.localStorage.getItem(SHOW_THINKING_TRACES_KEY) === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 

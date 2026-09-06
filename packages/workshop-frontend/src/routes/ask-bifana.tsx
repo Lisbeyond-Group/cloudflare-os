@@ -21,6 +21,7 @@ import {
 import { useDocumentTitle } from '../useDocumentTitle'
 import { homePromptFromSearch } from '../homePrompt'
 import { composerDraftStorageKey } from '../composerDraft'
+import { EMPLOYEE_CONVERSATION_SEARCH } from '../employeeConversationRoute'
 
 type AskBifanaSearch = { prompt?: string }
 
@@ -118,7 +119,11 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
         ])
         provisionalOverseerRef.current?.stub[Symbol.dispose]()
         provisionalOverseerRef.current = null
-        navigate({ to: '/workspace/$id', params: { id }, search: { chat } })
+        navigate({
+          to: '/workspace/$id',
+          params: { id },
+          search: { chat, ...EMPLOYEE_CONVERSATION_SEARCH },
+        })
       } catch (err) {
         const transient = logRpcFailure('Failed to create conversation:', err, {
           reportSite: 'workspace.create',

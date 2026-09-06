@@ -23,6 +23,7 @@ import ShareModal from '../../ShareModal'
 import DeleteConfirmationDialog from '../DeleteConfirmationDialog'
 import SidebarGadgetRow from './SidebarGadgetRow'
 import { RailLabel } from './RailConnections'
+import { EMPLOYEE_CONVERSATION_SEARCH } from '../../employeeConversationRoute'
 
 // Cap on items shown in the Recent list before the user clicks through to /workspaces.
 const RECENT_INITIAL_LIMIT = 3
@@ -350,6 +351,7 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
             </div>
             <Link
               to="/workspaces"
+              search={EMPLOYEE_CONVERSATION_SEARCH}
               className="mt-0.5 flex min-h-10 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium tracking-[-0.2px] text-lb-rail-label transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:min-h-11"
             >
               All chats

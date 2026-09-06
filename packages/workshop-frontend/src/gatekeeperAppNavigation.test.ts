@@ -9,6 +9,7 @@ import {
   parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
   parseWorkflowRouteState,
+  parsePropertyRouteState,
   parseGatekeeperAppWorkspaceTarget,
 } from "./gatekeeperAppNavigation";
 
@@ -148,5 +149,46 @@ describe("workflow URL state", () => {
     expect(parseWorkflowRouteState({ workflow: "../../settings", tab: "admin", status: ["approved"], item: "x".repeat(201) })).toEqual({});
     expect(parseWorkflowRouteState(null)).toEqual({});
     expect(parseWorkflowRouteState({ item: "<script>" })).toEqual({});
+  });
+});
+
+describe("property URL state", () => {
+  it("normalizes a bounded property workspace deep link", () => {
+    expect(parsePropertyRouteState({
+      property: " p0478 ",
+      tab: "guide",
+      q: "river",
+      service: "property_management",
+      region: "Lisbon",
+      status: "active",
+      scroll: "620",
+      token: "private",
+    })).toEqual({
+      property: "P0478",
+      tab: "guide",
+      q: "river",
+      service: "property_management",
+      region: "Lisbon",
+      status: "active",
+      scroll: 620,
+    });
+  });
+
+  it("retains an invalid marker across repeated boundary validation", () => {
+    const once = parsePropertyRouteState({ property: "../../settings", tab: "activity" });
+    expect(once).toEqual({ invalidProperty: "../../SETTINGS", tab: "activity" });
+    expect(parsePropertyRouteState(once)).toEqual(once);
+  });
+
+  it("drops oversized and unsupported filter state", () => {
+    expect(parsePropertyRouteState({
+      property: "P12345",
+      tab: "admin",
+      q: "x".repeat(101),
+      service: "finance",
+      region: "x".repeat(101),
+      status: "deleted",
+      scroll: -1,
+    })).toEqual({ invalidProperty: "P12345" });
   });
 });

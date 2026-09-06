@@ -6,6 +6,7 @@ type GadgetSearch = {
   // Selected workpiece (gadget) ID. Workpiece IDs start at 0, so parsing must not treat 0 as
   // absent.
   w?: number
+  employeeConversation?: boolean
 }
 
 function parseIntParam(value: unknown): number | undefined {
@@ -24,5 +25,8 @@ export const Route = createFileRoute('/workspace/$id')({
       : typeof search.chat === 'string' ? Number(search.chat) || undefined
       : undefined,
     w: parseIntParam(search.w),
+    employeeConversation: search.employeeConversation === true || search.employeeConversation === 'true'
+      ? true
+      : undefined,
   }),
 })

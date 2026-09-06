@@ -4,6 +4,8 @@ import { RpcStub, RpcTarget, newMessagePortRpcSession } from 'capnweb'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import type { GatekeeperUiFrame } from '@gadgets/workshop-shared/gatekeeper'
 import type {
+  GatekeeperAppPropertyNavigationMode,
+  GatekeeperAppPropertyRouteState,
   GatekeeperAppTheme,
   GatekeeperAppThemeReceiver,
   GatekeeperChatModelState,
@@ -20,6 +22,7 @@ import {
   normalizeGatekeeperAppPrompt,
   parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
+  parsePropertyRouteState,
   parseWorkflowRouteState,
   type WorkflowRouteState,
   parseGatekeeperAppWorkspaceTarget,
@@ -50,6 +53,10 @@ type OpenAppRoute = (route: GatekeeperAppRoute) => void
 type ReportConnections = (rows: GatekeeperAppConnection[]) => void
 type GetChatModelState = () => Promise<GatekeeperChatModelState>
 type SetChatModel = (modelId: string | null) => Promise<GatekeeperChatModelState>
+type SetPropertyRouteState = (
+  state: GatekeeperAppPropertyRouteState,
+  mode: GatekeeperAppPropertyNavigationMode,
+) => void
 
 type OverlayState = 'full' | null
 const CONNECTIONS_FEATURE = { connections: true } as const
@@ -107,6 +114,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #setChatModel: SetChatModel
   #getWorkflowRouteState: () => WorkflowRouteState
   #setWorkflowRouteState: (state: WorkflowRouteState) => void
+  #getPropertyRouteState: () => GatekeeperAppPropertyRouteState
+  #setPropertyRouteState: SetPropertyRouteState
   #presenting = false
   #theme: GatekeeperAppTheme
   #themeReceiver: RpcStub<GatekeeperAppThemeReceiver> | null = null
@@ -115,6 +124,7 @@ class GatekeeperAppHostImpl extends RpcTarget {
   #pendingResolvers: ((ack: PresentAck) => void)[] = []
   #frameId: number | null = null
   #promptNavigationTimer: ReturnType<typeof setTimeout> | null = null
+  #propertyNavigationTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     capability: any,
@@ -131,6 +141,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     setChatModel: SetChatModel,
     getWorkflowRouteState: () => WorkflowRouteState,
     setWorkflowRouteState: (state: WorkflowRouteState) => void,
+    getPropertyRouteState: () => GatekeeperAppPropertyRouteState,
+    setPropertyRouteState: SetPropertyRouteState,
   ) {
     super()
     this.#theme = theme
@@ -155,6 +167,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#setChatModel = setChatModel
     this.#getWorkflowRouteState = getWorkflowRouteState
     this.#setWorkflowRouteState = setWorkflowRouteState
+    this.#getPropertyRouteState = getPropertyRouteState
+    this.#setPropertyRouteState = setPropertyRouteState
   }
 
   get ui(): RpcStub<RpcTarget> {
@@ -204,6 +218,21 @@ class GatekeeperAppHostImpl extends RpcTarget {
   setWorkflowRouteState(value: unknown): void {
     if (this.#appRoute !== "workflows") throw new TypeError("Workflow navigation is unavailable here.")
     this.#setWorkflowRouteState(parseWorkflowRouteState(value))
+  }
+
+  getPropertyRouteState(): GatekeeperAppPropertyRouteState {
+    return this.#appRoute === "properties" ? this.#getPropertyRouteState() : {}
+  }
+
+  setPropertyRouteState(value: unknown, mode: unknown): void {
+    if (this.#appRoute !== "properties") throw new TypeError("Property navigation is unavailable here.")
+    if (mode !== "push" && mode !== "replace") throw new TypeError("Invalid property navigation mode.")
+    const state = parsePropertyRouteState(value)
+    if (this.#propertyNavigationTimer !== null) clearTimeout(this.#propertyNavigationTimer)
+    this.#propertyNavigationTimer = setTimeout(() => {
+      this.#propertyNavigationTimer = null
+      this.#setPropertyRouteState(state, mode as GatekeeperAppPropertyNavigationMode)
+    }, 0)
   }
 
   reportConnections(rows: unknown): void {
@@ -291,6 +320,10 @@ class GatekeeperAppHostImpl extends RpcTarget {
       clearTimeout(this.#promptNavigationTimer)
       this.#promptNavigationTimer = null
     }
+    if (this.#propertyNavigationTimer !== null) {
+      clearTimeout(this.#propertyNavigationTimer)
+      this.#propertyNavigationTimer = null
+    }
     for (const resolve of this.#pendingResolvers) resolve({ rect: null, willResize: false })
     this.#pendingResolvers = []
     this.#pendingActive = null
@@ -317,6 +350,23 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
   routeStateRef.current = parseWorkflowRouteState(location.search)
   const setWorkflowRouteState = useCallback((state: WorkflowRouteState) => {
     void navigate({ to: "/workflows", search: state, replace: true })
+  }, [navigate])
+  const propertyRouteStateRef = useRef<GatekeeperAppPropertyRouteState>({})
+  propertyRouteStateRef.current = parsePropertyRouteState(location.search)
+  const propertyRouteStateKey = appRoute === "properties"
+    ? `${propertyRouteStateRef.current.property ?? propertyRouteStateRef.current.invalidProperty ?? "list"}:${propertyRouteStateRef.current.tab ?? "overview"}`
+    : ""
+  const setPropertyRouteState = useCallback<SetPropertyRouteState>((state, mode) => {
+    if (mode === "push" && state.property) {
+      const listState = { ...state }
+      delete listState.property
+      delete listState.tab
+      delete listState.invalidProperty
+      void navigate({ to: "/properties", search: listState, replace: true })
+        .then(() => navigate({ to: "/properties", search: state }))
+      return
+    }
+    void navigate({ to: "/properties", search: state, replace: true })
   }, [navigate])
   const { authenticatedApi } = useAuthenticatedApi()
   const { reportConnections } = useRailConnections()
@@ -476,6 +526,8 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
         setChatModel,
         () => routeStateRef.current,
         setWorkflowRouteState,
+        () => propertyRouteStateRef.current,
+        setPropertyRouteState,
       )
       hostRef.current = host
       sessionRef.current = newMessagePortRpcSession(port, host)
@@ -510,10 +562,12 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
   }, [acceptConnections, appRoute, chatModelsEnabled, frame.iframeHtml, frame.ui,
       gatekeeperVendorId, loadChatModelState, openAppRoute, openPrompt, openTarget, present,
-      setChatModel, setWorkflowRouteState, resolveWorkspaceTitles, setOverlayPhase])
+      propertyRouteStateKey, setChatModel, setPropertyRouteState, setWorkflowRouteState,
+      resolveWorkspaceTitles, setOverlayPhase])
 
   return (
     <iframe
+      key={propertyRouteStateKey}
       ref={iframeRef}
       srcDoc={frame.iframeHtml}
       // allow-scripts: run the app's JS. allow-modals: its beforeunload unsaved-changes guard. Not
