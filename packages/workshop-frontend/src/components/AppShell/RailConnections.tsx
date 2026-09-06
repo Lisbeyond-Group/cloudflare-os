@@ -14,7 +14,7 @@ export function RailLabel({ children }: { children: ReactNode }) {
 export default function RailConnections({ collapsed = false }: { collapsed?: boolean }) {
   const { rows } = useRailConnections()
   const summary = rows === null
-    ? 'Loading'
+    ? 'Status unknown'
     : rows.length === 0
       ? 'Unavailable'
       : `${rows.filter((row) => row.state === 'live').length} connected`
