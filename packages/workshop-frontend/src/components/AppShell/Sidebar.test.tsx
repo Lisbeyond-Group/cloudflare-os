@@ -166,15 +166,17 @@ describe('Console v3 sidebar', () => {
       'Workflows',
     ])
     expect(navLinks.some((link) => link.getAttribute('href') === '/connections')).toBe(false)
-    expect(view.querySelector('a[href="/connections"]')?.textContent).toContain('All connections')
+    expect(view.querySelector('a[href="/connections"]')?.textContent)
+      .toContain('Connections · Loading')
   })
 
-  it('shows a three-row skeleton before the first connections report', async () => {
+  it('keeps Connections reachable while its status is loading', async () => {
     const view = await renderSidebar()
-    expect(view.querySelector('[aria-label="Loading connections"]')?.children).toHaveLength(3)
+    const link = view.querySelector<HTMLAnchorElement>('a[href="/connections"]')
+    expect(link?.getAttribute('aria-label')).toBe('Connections · Loading')
   })
 
-  it('renders at most six reported rows with problems first', async () => {
+  it('counts only live connections in the compact summary', async () => {
     const rows: RailConnection[] = [
       { id: 'hostaway', name: 'Hostaway', state: 'live', detail: 'Live' },
       { id: 'notion', name: 'Notion', state: 'off', detail: 'Not connected' },
@@ -185,25 +187,26 @@ describe('Console v3 sidebar', () => {
       { id: 'infraspeak', name: 'Infraspeak', state: 'live', detail: 'Live' },
     ]
     const view = await renderSidebar({ rows })
-    const sectionText = view.querySelector('section[aria-label="Connections"]')?.textContent ?? ''
-    expect(sectionText.indexOf('Notion')).toBeLessThan(sectionText.indexOf('Salesforce'))
-    expect(sectionText.indexOf('Salesforce')).toBeLessThan(sectionText.indexOf('Hostaway'))
-    expect(sectionText).not.toContain('Infraspeak')
+    const link = view.querySelector<HTMLAnchorElement>('a[href="/connections"]')
+    expect(link?.getAttribute('aria-label')).toBe('Connections · 5 connected')
+    expect(link?.textContent).toContain('Connections · 5 connected')
+    expect(link?.textContent).not.toContain('Notion')
   })
 
-  it('names an empty terminal report instead of leaving a blank connection section', async () => {
+  it('keeps an empty terminal report distinct from zero connected', async () => {
     const view = await renderSidebar({ rows: [] })
-    expect(view.querySelector('section[aria-label="Connections"]')?.textContent)
-      .toContain('Connection status unavailable')
+    expect(view.querySelector('a[href="/connections"]')?.getAttribute('aria-label'))
+      .toBe('Connections · Unavailable')
   })
 
-  it('renders only titled status dots when collapsed', async () => {
+  it('keeps the compact Connections link labeled when collapsed', async () => {
     const view = await renderSidebar({
       collapsed: true,
       rows: [{ id: 'hostaway', name: 'Hostaway', state: 'live', detail: 'Live' }],
     })
-    const section = view.querySelector('section[aria-label="Connections"]')
-    expect(section?.textContent).not.toContain('Hostaway')
-    expect(section?.querySelector('[title="Hostaway: Live"]')).not.toBeNull()
+    const link = view.querySelector<HTMLAnchorElement>('a[href="/connections"]')
+    expect(link?.textContent).toBe('')
+    expect(link?.getAttribute('aria-label')).toBe('Connections · 1 connected')
+    expect(link?.getAttribute('title')).toBe('Connections · 1 connected')
   })
 })

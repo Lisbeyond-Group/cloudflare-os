@@ -1,16 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { DotsThree, Star, ShareNetwork, Trash, Pencil } from '@phosphor-icons/react'
+import { ChatCircle, DotsThree, Star, ShareNetwork, Trash, Pencil } from '@phosphor-icons/react'
 import { DropdownMenu } from '@cloudflare/kumo'
 import { MENU_CONTENT, MENU_ITEM, MENU_ITEM_DANGER, MENU_POSITIONER_STYLE } from '../menuStyles'
 import { useState, useEffect, useRef } from 'react'
 import type { GadgetMetadataWithTimestamps } from '@gadgets/workshop-shared/api'
-
-function initials(title: string | undefined): string {
-  const t = (title || 'Untitled').trim()
-  if (!t) return 'UG'
-  const parts = t.split(/\s+/).slice(0, 2)
-  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || t.slice(0, 2).toUpperCase()
-}
 
 function conversationTitle(title: string | undefined): string {
   const trimmed = title?.trim()
@@ -19,7 +12,7 @@ function conversationTitle(title: string | undefined): string {
 }
 
 /**
- * One row in the sidebar's Favorites / Recent list. Compact, with a monogram avatar, a truncated
+ * One row in the sidebar's Favorites / Recent list. Compact, with a chat icon, a truncated
  * title, and an overflow menu (favorite, rename, share, delete). Favorite/rename/share/delete
  * callbacks are passed in by the parent so this row stays a pure presentational component.
  */
@@ -62,19 +55,27 @@ export default function SidebarGadgetRow({
     <Link
       to="/workspace/$id"
       params={{ id: gadget.id }}
-      className="group flex h-10 items-center gap-2 rounded-lg pl-1.5 pr-1 text-[13px] leading-[18px] tracking-[-0.25px] text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:h-11"
-      activeProps={{ className: 'flex h-10 items-center gap-2 rounded-lg pl-1.5 pr-1 text-[13px] leading-[18px] tracking-[-0.25px] bg-lb-rail-active text-lb-rail-ink font-medium max-md:h-11' }}
+      className={[
+        'group flex h-10 items-center rounded-lg text-[13px] leading-[18px] tracking-[-0.25px] text-lb-rail-ink-2 transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:h-11',
+        collapsed ? 'w-10 justify-center max-md:w-11' : 'gap-2 pl-1.5 pr-1',
+      ].join(' ')}
+      activeProps={{
+        className: [
+          'flex h-10 items-center rounded-lg bg-lb-rail-active text-[13px] font-medium leading-[18px] tracking-[-0.25px] text-lb-rail-ink max-md:h-11',
+          collapsed ? 'w-10 justify-center max-md:w-11' : 'gap-2 pl-1.5 pr-1',
+        ].join(' '),
+      }}
       onClick={(e) => {
         if (renaming) e.preventDefault()
       }}
       title={collapsed ? displayTitle : undefined}
     >
-      <div
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-lb-rail-active text-[10px] font-medium text-lb-rail-muted"
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center text-lb-rail-muted"
         aria-hidden="true"
       >
-        {initials(gadget.title)}
-      </div>
+        <ChatCircle size={14} weight="regular" />
+      </span>
 
       {!collapsed && (
         <>
@@ -145,7 +146,7 @@ export default function SidebarGadgetRow({
         </>
       )}
 
-      {/* Collapsed rows show only the monogram (aria-hidden), so name the link for screen readers. */}
+      {/* Collapsed rows show only the icon (aria-hidden), so name the link for screen readers. */}
       {collapsed && <span className="sr-only">{displayTitle}</span>}
     </Link>
   )

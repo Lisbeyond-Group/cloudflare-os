@@ -10,7 +10,15 @@ export interface GatekeeperAppTheme {
   features?: {
     /** The host accepts bounded connection summaries for its navigation rail. */
     connections?: boolean;
+    /** The host exposes the authorized chat model catalogue and remembered selection. */
+    chatModels?: boolean;
   };
+}
+
+/** The bounded model preference state exposed to the first-party Home app. */
+export interface GatekeeperChatModelState {
+  models: Array<{ id: string; name: string }>;
+  selectedModelId: string | null;
 }
 
 /** A sandboxed gatekeeper app capability that receives complete appearance updates. */

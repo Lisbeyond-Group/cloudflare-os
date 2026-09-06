@@ -10,11 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  CaretDown,
-  Star,
-} from '@phosphor-icons/react'
+import { ArrowRight, CaretDown, Star } from '@phosphor-icons/react'
 import { useKumoToastManager } from '@cloudflare/kumo'
 import type { RpcStub } from 'capnweb'
 import {
@@ -29,7 +25,7 @@ import SidebarGadgetRow from './SidebarGadgetRow'
 import { RailLabel } from './RailConnections'
 
 // Cap on items shown in the Recent list before the user clicks through to /workspaces.
-const RECENT_INITIAL_LIMIT = 4
+const RECENT_INITIAL_LIMIT = 3
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shape of the workspace state shared by the scrolling lists and their dialogs.
@@ -296,8 +292,6 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
   }
 
   const recentShown = recent.slice(0, RECENT_INITIAL_LIMIT)
-  const recentHidden = Math.max(0, recent.length - RECENT_INITIAL_LIMIT)
-
   return (
     <div className="flex flex-col pb-3">
       {/* Saved conversations stay fully visible when present; an empty group adds no value. */}
@@ -332,7 +326,7 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
       >
         {gadgetsLoading ? (
           <div className="flex flex-col gap-1 px-1">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2].map((i) => (
               <div key={i} className="h-7 rounded-md bg-lb-rail-active animate-pulse" />
             ))}
           </div>
@@ -358,8 +352,8 @@ export function SidebarWorkspacesLists({ collapsed = false }: { collapsed?: bool
               to="/workspaces"
               className="mt-0.5 flex min-h-10 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium tracking-[-0.2px] text-lb-rail-label transition-colors hover:bg-lb-rail-active hover:text-lb-rail-ink max-md:min-h-11"
             >
-              {recentHidden > 0 ? `Show all (${recent.length})` : 'Show all'}
-              <ArrowRight size={11} weight="bold" />
+              All chats
+              <ArrowRight size={11} weight="bold" aria-hidden="true" />
             </Link>
           </>
         )}

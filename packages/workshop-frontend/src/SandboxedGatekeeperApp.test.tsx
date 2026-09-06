@@ -17,6 +17,7 @@ import type { GatekeeperUiFrame } from "@gadgets/workshop-shared/gatekeeper";
 import type {
   GatekeeperAppTheme,
   GatekeeperAppThemeReceiver,
+  GatekeeperChatModelState,
 } from "@gadgets/workshop-shared/theme";
 import SandboxedGatekeeperApp from "./SandboxedGatekeeperApp";
 import {
@@ -41,7 +42,18 @@ const WORKSPACE_ID = "a".repeat(64);
 const listGadgets = vi.fn<() => Promise<{ id: string; title: string }[]>>(async () => [
   { id: WORKSPACE_ID, title: "Daily Brief" },
 ]);
-const authenticatedApi = { listGadgets };
+const listModels = vi.fn<() => Promise<Array<{ type: "agent"; id: string; name: string }>>>(async () => [
+  { type: "agent" as const, id: "model-a", name: "Model A" },
+  { type: "agent" as const, id: "model-b", name: "Model B" },
+]);
+const authenticatedApi = { listGadgets, listModels };
+
+const storage = new Map<string, string>();
+const localStorageStub = {
+  clear: () => storage.clear(),
+  getItem: (key: string) => storage.get(key) ?? null,
+  setItem: (key: string, value: string) => storage.set(key, value),
+};
 
 vi.mock("./AuthContext", () => ({
   useAuthenticatedApi: () => ({ authenticatedApi }),
@@ -59,6 +71,8 @@ interface TestHost extends RpcTarget {
   setWorkflowRouteState(state: unknown): Promise<void>;
   openAppRoute(route: string): Promise<void>;
   reportConnections(rows: unknown): Promise<void>;
+  getChatModelState(): Promise<GatekeeperChatModelState>;
+  setChatModel(modelId: string | null): Promise<GatekeeperChatModelState>;
 }
 
 class EmptyUi extends RpcTarget {}
@@ -78,7 +92,13 @@ describe("SandboxedGatekeeperApp navigation", () => {
   let host: RpcStub<TestHost> | undefined;
 
   beforeEach(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: localStorageStub,
+    });
     listGadgets.mockClear();
+    listModels.mockClear();
+    window.localStorage.clear();
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
 
@@ -87,6 +107,7 @@ describe("SandboxedGatekeeperApp navigation", () => {
     await act(async () => root?.unmount());
     container?.remove();
     vi.restoreAllMocks();
+    window.localStorage.clear();
   });
 
   it("reads and updates bounded workflow URL state over the real host RPC", async () => {
@@ -171,6 +192,13 @@ describe("SandboxedGatekeeperApp navigation", () => {
       accentColor: "#7c3aed",
       features: { connections: true },
     });
+    await expect(host.getChatModelState()).rejects.toThrow(
+      "Chat model selection is unavailable for this app.",
+    );
+    await expect(host.setChatModel("model-a")).rejects.toThrow(
+      "Chat model selection is unavailable for this app.",
+    );
+    expect(listModels).not.toHaveBeenCalled();
     await expect(host.getAppRoute()).resolves.toBe("properties");
     await expect(host.getWorkflowRouteState()).resolves.toEqual({});
     await expect(host.setWorkflowRouteState({ item: "item-1" })).rejects.toThrow("Workflow navigation is unavailable here.");
@@ -278,6 +306,36 @@ describe("SandboxedGatekeeperApp navigation", () => {
         ports: [port2],
       }),
     );
+
+    const themeReceiver = new TestThemeReceiver();
+    await expect(host.subscribeTheme(themeReceiver)).resolves.toEqual({
+      mode: "light",
+      accentColor: "#7c3aed",
+      features: { connections: true, chatModels: true },
+    });
+    listModels.mockRejectedValueOnce(new Error("Model catalogue unavailable"));
+    await expect(host.getChatModelState()).rejects.toThrow("Model catalogue unavailable");
+    await expect(host.getChatModelState()).resolves.toEqual({
+      models: [
+        { id: "model-a", name: "Model A" },
+        { id: "model-b", name: "Model B" },
+      ],
+      selectedModelId: "model-a",
+    });
+    await expect(host.setChatModel("model-b")).resolves.toEqual({
+      models: [
+        { id: "model-a", name: "Model A" },
+        { id: "model-b", name: "Model B" },
+      ],
+      selectedModelId: "model-b",
+    });
+    expect(window.localStorage.getItem("lastSelectedModel")).toBe("model-b");
+    await expect(host.setChatModel("removed-model")).rejects.toThrow(
+      "Invalid chat model selection.",
+    );
+    expect(window.localStorage.getItem("lastSelectedModel")).toBe("model-b");
+    await expect(host.setChatModel(null)).resolves.toMatchObject({ selectedModelId: null });
+    await expect(host.getChatModelState()).resolves.toMatchObject({ selectedModelId: null });
 
     await expect(host.openPrompt("   ")).rejects.toThrow(
       "Gatekeeper app prompt cannot be empty",
