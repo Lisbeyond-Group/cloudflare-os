@@ -579,24 +579,6 @@ html {
   }
 }
 
-/* Keep the expanded Console rail proportionate on large monitors. Browser zoom scales the proven
-   232px surface as a coherent layout, including its type, icons, rows, hit areas, and spacing. The
-   compensated height keeps its pinned footer exactly at the viewport edge. Collapsed and mobile
-   rails never match these desktop-only rules and retain their original scale. */
-@media (min-width: 1800px) {
-  .lb-sidebar-rail[data-collapsed='false'] {
-    height: calc(100vh / 1.1379310345);
-    zoom: 1.1379310345;
-  }
-}
-
-@media (min-width: 2200px) {
-  .lb-sidebar-rail[data-collapsed='false'] {
-    height: calc(100vh / 1.2413793103);
-    zoom: 1.2413793103;
-  }
-}
-
 /* Sidebar list scroll: thin and unobtrusive. The thumb is transparent at rest and only fades in
    while the user is actually interacting with the rail (hover / active scroll), so the rail stays
    calm by default. */
