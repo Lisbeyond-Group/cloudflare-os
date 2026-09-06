@@ -167,13 +167,13 @@ describe('Console v3 sidebar', () => {
     ])
     expect(navLinks.some((link) => link.getAttribute('href') === '/connections')).toBe(false)
     expect(view.querySelector('a[href="/connections"]')?.textContent)
-      .toContain('Connections · Loading')
+      .toContain('Connections · Status unknown')
   })
 
-  it('keeps Connections reachable while its status is loading', async () => {
+  it('keeps Connections reachable when no route has reported status', async () => {
     const view = await renderSidebar()
     const link = view.querySelector<HTMLAnchorElement>('a[href="/connections"]')
-    expect(link?.getAttribute('aria-label')).toBe('Connections · Loading')
+    expect(link?.getAttribute('aria-label')).toBe('Connections · Status unknown')
   })
 
   it('counts only live connections in the compact summary', async () => {
