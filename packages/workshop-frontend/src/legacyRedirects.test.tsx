@@ -60,10 +60,14 @@ describe("legacy workspace URL redirects", () => {
   }
 
   it("redirects /gadget/$id to /workspace/$id preserving search and hash", async () => {
-    const router = await renderAt("/gadget/my-workspace?chat=5&other=thing#share=abc123");
+    const router = await renderAt("/gadget/my-workspace?chat=5&employeeConversation=true&other=thing#share=abc123");
 
     expect(router.state.location.pathname).toBe("/workspace/my-workspace");
-    expect(router.state.location.search).toEqual({ chat: 5, other: "thing" });
+    expect(router.state.location.search).toEqual({
+      chat: 5,
+      employeeConversation: true,
+      other: "thing",
+    });
     expect(router.state.location.hash).toBe("share=abc123");
     // The redirect replaces the legacy entry, so Back doesn't bounce off it.
     expect(router.history.length).toBe(1);

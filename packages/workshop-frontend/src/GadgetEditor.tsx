@@ -64,6 +64,11 @@ import {
   useWorkspaceBodyWidth,
   workspaceChatWidthFromPointer,
 } from './workspaceLayout'
+import {
+  employeeConversationSearch,
+  employeeConversationWorkspaceSearch,
+  genericWorkpieceWorkspaceSearch,
+} from './employeeConversationRoute'
 
 const NO_GADGETS: ReadonlySet<WorkpieceId> = new Set()
 
@@ -428,10 +433,12 @@ export default function GadgetEditor() {
   const navigate = useNavigate()
   const { authenticatedApi } = useAuthenticatedApi()
 
-  const { chat: chatParam, w: workpieceParam } = useSearch({ strict: false }) as
-    { chat?: number; w?: number }
+  const { chat: chatParam, w: workpieceParam, employeeConversation: employeeConversationParam } =
+    useSearch({ strict: false }) as
+      { chat?: number; w?: number; employeeConversation?: boolean | string }
   const urlChatId = chatParam !== undefined ? chatParam : null
   const urlWorkpieceId = workpieceParam !== undefined ? workpieceParam : null
+  const employeeConversation = employeeConversationSearch({ employeeConversation: employeeConversationParam })
 
   // ── toasts ─────────────────────────────────────────────────────────────────────
   const toasts = useKumoToastManager()
@@ -469,7 +476,18 @@ export default function GadgetEditor() {
       if (!isEditingTitleRef.current) setTitleInput(nextMetadata.title)
     },
     onShareKeyConsumed: () => {
-      if (id) navigate({ to: '/workspace/$id', params: { id }, search: {}, replace: true })
+      if (id) navigate({
+        to: '/workspace/$id',
+        params: { id },
+        // A share key is a one-time credential. Keep only the conversation context that is safe
+        // to continue after it has been consumed; omit the key and incidental query parameters.
+        search: () => employeeConversationWorkspaceSearch({
+          chat: chatParam,
+          w: workpieceParam,
+          employeeConversation: employeeConversationParam,
+        }),
+        replace: true,
+      })
     },
     onInvalidShareKey: () => {
       toasts.add({ title: 'Invalid or expired share link.', variant: 'error' })
@@ -1178,11 +1196,13 @@ export default function GadgetEditor() {
       to: '/workspace/$id',
       params: { id: id! },
       // Selecting a draft also returns to its creating conversation.
-      search: (prev: Record<string, unknown>) => ({
-        ...prev,
-        chat: pendingChatId ?? (typeof prev.chat === 'number' ? prev.chat : undefined),
-        w: workpieceId,
-      }),
+      // Opening an artifact is an explicit transition to the generic workspace editor. This
+      // intentionally clears the employee presentation marker while preserving its chat context.
+      search: (prev: Record<string, unknown>) => genericWorkpieceWorkspaceSearch(
+        prev,
+        workpieceId,
+        pendingChatId,
+      ),
     })
   }, [id, navigate, isAgentActive, setWorkspaceVisibility, workpieces, handleTabSelect])
 
@@ -1242,7 +1262,7 @@ export default function GadgetEditor() {
 
   // ── back ──────────────────────────────────────────────────────────────────────
   const handleGoToWorkspaces = () => {
-    navigate({ to: '/workspaces' })
+    navigate({ to: '/workspaces', search: { employeeConversation: undefined } })
   }
 
   // ── delete ────────────────────────────────────────────────────────────────────
@@ -1332,6 +1352,43 @@ export default function GadgetEditor() {
         authenticatedApi={authenticatedApi}
         currentUserId={userInfo?.id ?? null}
       />
+    )
+  }
+
+  if (employeeConversation) {
+    return (
+      <section className="h-full min-h-0" aria-label="Bifana conversation">
+        <ChatInterface
+          key={id}
+          workspaceId={id}
+          overseer={overseer.stub}
+          selectedChatId={effectiveSelectedChatId}
+          onNavigateToChat={navigateToChat}
+          onProposedChangesChange={setProposedChanges}
+          onDraftProposedChangesChange={setDraftProposedChanges}
+          onStreamingProposedChangesChange={updates => setStreamingProposedChanges(updates)}
+          onStreamingActiveFileChange={handleStreamingActiveFileChange}
+          pendingConsoleLogCount={consoleLogCount}
+          consoleLogPreview={consoleLogCount > 0 ? formatConsoleLogs(consoleLogBufferRef.current) : ''}
+          consoleLogSeverity={
+            consoleLogBufferRef.current.some(log => log.level === 'error')
+              ? 'error'
+              : consoleLogBufferRef.current.some(log => log.level === 'warn')
+                ? 'warn'
+                : 'info'
+          }
+          onConsumeConsoleLogs={consumeConsoleLogs}
+          onDiscardConsoleLogs={discardConsoleLogs}
+          constrainChatWidth
+          onChatCountChange={handleChatCountChange}
+          onAgentActiveChange={handleAgentActiveChange}
+          onAutoApproveChange={() => setAutoApproveReloadTrigger(trigger => trigger + 1)}
+          onHasAnyCodeChange={setHasAnyProposedChanges}
+          onSelectedChatHasProposedChangesChange={setSelectedChatHasProposedChanges}
+          onOpenGadget={handleSelectWorkpiece}
+          outputOfWorkpiece={outputOfWorkpiece}
+        />
+      </section>
     )
   }
 

@@ -1,3 +1,5 @@
+import type { GatekeeperAppPropertyRouteState } from "@gadgets/workshop-shared/theme";
+
 export const MAX_GATEKEEPER_APP_PROMPT_LENGTH = 4_000;
 
 export const GATEKEEPER_APP_ROUTES = {
@@ -131,5 +133,49 @@ export function parseWorkflowRouteState(value: unknown): WorkflowRouteState {
   if (typeof value.tab === "string" && ["invoices", "overview", "activity", "about"].includes(value.tab)) state.tab = value.tab as WorkflowRouteState["tab"];
   if (typeof value.status === "string" && ["all", "awaiting_approval", "approved", "handed_off", "rejected", "needs_human"].includes(value.status)) state.status = value.status as WorkflowRouteState["status"];
   if (typeof value.item === "string" && /^[a-zA-Z0-9_-]{1,200}$/.test(value.item)) state.item = value.item;
+  return state;
+}
+
+const PROPERTY_TABS = new Set(["overview", "guide", "operations", "activity"]);
+const PROPERTY_SERVICES = new Set(["property_management", "upkeep"]);
+const PROPERTY_STATUSES = new Set(["active", "onboarding", "prospect", "inactive", "attention", "offboarding", "unknown"]);
+
+/** Keep only bounded property navigation state before it crosses the iframe boundary. */
+export function parsePropertyRouteState(value: unknown): GatekeeperAppPropertyRouteState {
+  if (!isRecord(value)) return {};
+  const state: GatekeeperAppPropertyRouteState = {};
+  if (typeof value.property === "string") {
+    const property = value.property.trim().toUpperCase();
+    if (/^P\d{4}$/.test(property)) state.property = property;
+    else if (property.length > 0 && property.length <= 100) state.invalidProperty = property;
+  }
+  if (
+    !state.property
+    && !state.invalidProperty
+    && typeof value.invalidProperty === "string"
+    && value.invalidProperty.length > 0
+    && value.invalidProperty.length <= 100
+  ) {
+    state.invalidProperty = value.invalidProperty;
+  }
+  if (typeof value.tab === "string" && PROPERTY_TABS.has(value.tab)) {
+    state.tab = value.tab as GatekeeperAppPropertyRouteState["tab"];
+  }
+  if (typeof value.q === "string" && value.q.length <= 100) state.q = value.q;
+  if (typeof value.service === "string" && PROPERTY_SERVICES.has(value.service)) {
+    state.service = value.service as GatekeeperAppPropertyRouteState["service"];
+  }
+  if (typeof value.region === "string" && value.region.length > 0 && value.region.length <= 100) {
+    state.region = value.region;
+  }
+  if (typeof value.status === "string" && PROPERTY_STATUSES.has(value.status)) {
+    state.status = value.status as GatekeeperAppPropertyRouteState["status"];
+  }
+  const scroll = typeof value.scroll === "string" && /^\d+$/.test(value.scroll)
+    ? Number(value.scroll)
+    : value.scroll;
+  if (typeof scroll === "number" && Number.isSafeInteger(scroll) && scroll >= 0 && scroll <= 10_000_000) {
+    state.scroll = scroll;
+  }
   return state;
 }

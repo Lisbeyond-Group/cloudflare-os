@@ -32,11 +32,12 @@ vi.mock('@cloudflare/kumo', () => ({
 }))
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ to, children, className }: {
+  Link: ({ to, search, children, className }: {
     to: string
+    search?: { employeeConversation?: boolean }
     children: React.ReactNode
     className?: string
-  }) => <a href={to} className={className}>{children}</a>,
+  }) => <a href={`${to}${search?.employeeConversation ? '?employeeConversation=true' : ''}`} className={className}>{children}</a>,
 }))
 
 vi.mock('./SidebarGadgetRow', () => ({
@@ -113,7 +114,7 @@ describe('sidebar chat groups', () => {
       'recent-1',
       'recent-2',
     ])
-    expect(view.querySelector<HTMLAnchorElement>('a[href="/workspaces"]')?.textContent)
+    expect(view.querySelector<HTMLAnchorElement>('a[href="/workspaces?employeeConversation=true"]')?.textContent)
       .toContain('All chats')
   })
 

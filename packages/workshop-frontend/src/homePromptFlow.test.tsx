@@ -14,7 +14,7 @@ const localStorageStub = {
 
 const testState = vi.hoisted(() => {
   const listModels = vi.fn<() => Promise<Array<{ type: "agent"; id: string; name: string }>>>(async () => []);
-  const newGadget = vi.fn<() => never>();
+  const newGadget = vi.fn<() => unknown>();
   return {
     addToast: vi.fn<(toast: unknown) => void>(),
     authenticatedApi: { listModels, newGadget },
@@ -27,6 +27,7 @@ const testState = vi.hoisted(() => {
     blockedReasons: [] as Array<string | undefined>,
     selectedModels: [] as Array<string | null>,
     submittedModels: [] as Array<string | null>,
+    onSend: undefined as undefined | ((message: string, model: string | null) => Promise<void>),
   };
 });
 
@@ -49,17 +50,19 @@ vi.mock("./AuthContext", () => ({
 }));
 
 vi.mock("./ChatInterface", () => ({
-  ChatInput: ({ seedText, seedNonce, draftStorageKey, selectedModel, blockedReason }: {
+  ChatInput: ({ seedText, seedNonce, draftStorageKey, selectedModel, blockedReason, onSend }: {
     seedText?: string;
     seedNonce?: number;
     draftStorageKey?: string;
     selectedModel: string | null;
     blockedReason?: string;
+    onSend: (message: string, model: string | null) => Promise<void>;
   }) => {
     testState.seeds.push({ text: seedText, nonce: seedNonce });
     testState.draftStorageKeys.push(draftStorageKey);
     testState.blockedReasons.push(blockedReason);
     testState.selectedModels.push(selectedModel);
+    testState.onSend = onSend;
     return <>
       <textarea aria-label="Prompt" readOnly value={seedText ?? ""} />
       <button
@@ -99,6 +102,7 @@ describe("Ask Bifana prompt route flow", () => {
     testState.blockedReasons.length = 0;
     testState.selectedModels.length = 0;
     testState.submittedModels.length = 0;
+    testState.onSend = undefined;
     vi.clearAllMocks();
   });
 
@@ -175,6 +179,29 @@ describe("Ask Bifana prompt route flow", () => {
 
     expect(testState.selectedModels).toContain("model-a");
     expect(testState.listModels).toHaveBeenCalledTimes(2);
+  });
+
+  it("opens a new Ask Bifana conversation in the explicit employee presentation", async () => {
+    const dispose = vi.fn();
+    const overseer = {
+      newChat: vi.fn().mockResolvedValue(7),
+      getMetadata: vi.fn().mockResolvedValue({ id: "conversation-workspace" }),
+      [Symbol.dispose]: dispose,
+    };
+    testState.newGadget.mockReturnValueOnce(overseer);
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root!.render(<AskBifanaPageContent />));
+
+    await act(async () => testState.onSend?.("Show current priorities", "model-a"));
+
+    expect(testState.navigate).toHaveBeenCalledWith({
+      to: "/workspace/$id",
+      params: { id: "conversation-workspace" },
+      search: { chat: 7, employeeConversation: true },
+    });
+    expect(dispose).toHaveBeenCalledOnce();
   });
 });
 

@@ -21,6 +21,20 @@ export interface GatekeeperChatModelState {
   selectedModelId: string | null;
 }
 
+/** Bounded browser-route state for the first-party property workspace. */
+export interface GatekeeperAppPropertyRouteState {
+  property?: string;
+  invalidProperty?: string;
+  tab?: "overview" | "guide" | "operations" | "activity";
+  q?: string;
+  service?: "property_management" | "upkeep";
+  region?: string;
+  status?: "active" | "onboarding" | "prospect" | "inactive" | "attention" | "offboarding" | "unknown";
+  scroll?: number;
+}
+
+export type GatekeeperAppPropertyNavigationMode = "push" | "replace";
+
 /** A sandboxed gatekeeper app capability that receives complete appearance updates. */
 export interface GatekeeperAppThemeReceiver extends RpcTarget {
   /** Applies the latest Workshop appearance state. */

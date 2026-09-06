@@ -14,6 +14,7 @@ import AppShell from '../components/AppShell/AppShell'
 import LoginPage from '../LoginPage'
 import OnboardingWizard from '../OnboardingWizard'
 import AccountSelectionModal from '../components/billing/AccountSelectionModal'
+import { employeeConversationSearch } from '../employeeConversationRoute'
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -24,6 +25,7 @@ function RootComponent() {
   const connectionLost = useConnectionLost()
   const { isAuthenticated, authenticatedApi, isLoading, error, logout, login } = useAuth(rpcStub)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const search = useRouterState({ select: (s) => s.location.search })
 
   // When authenticatedApi becomes available, the connection is proven alive.
   useEffect(() => {
@@ -41,7 +43,8 @@ function RootComponent() {
 
   // The workspace editor renders fullscreen (no app chrome). /gadget/ is the legacy URL, kept
   // here so the chrome doesn't flash in during the redirect to /workspace/.
-  const isWorkspaceEditor = pathname.startsWith('/workspace/') || pathname.startsWith('/gadget/')
+  const isWorkspaceEditor = (pathname.startsWith('/workspace/') || pathname.startsWith('/gadget/')) &&
+    !employeeConversationSearch(search)
 
   const handleLoginSuccess = () => {
     const token = localStorage.getItem('authToken')

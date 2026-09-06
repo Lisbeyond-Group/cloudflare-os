@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Plus } from '@phosphor-icons/react'
 import GadgetList from '../components/GadgetList'
 import { useDocumentTitle } from '../useDocumentTitle'
+import { employeeConversationSearch } from '../employeeConversationRoute'
 
 /**
  * Full workspace listing. The sidebar surfaces Favorites + a handful of Recent workspaces; this is
@@ -9,10 +10,14 @@ import { useDocumentTitle } from '../useDocumentTitle'
  */
 export const Route = createFileRoute('/workspaces')({
   component: WorkspacesPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    employeeConversation: employeeConversationSearch(search) ? true : undefined,
+  }),
 })
 
 function WorkspacesPage() {
   useDocumentTitle('Chat history')
+  const { employeeConversation } = Route.useSearch()
   return (
     <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-6 sm:px-10">
       <header className="flex items-end justify-between gap-4 px-3 pb-3 pt-10">
@@ -32,7 +37,7 @@ function WorkspacesPage() {
         </Link>
       </header>
       <div className="min-h-0 flex-1">
-        <GadgetList showHeader={false} />
+        <GadgetList showHeader={false} employeeConversation={employeeConversation === true} />
       </div>
     </div>
   )
