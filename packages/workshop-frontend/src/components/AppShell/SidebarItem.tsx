@@ -50,7 +50,7 @@ export default function SidebarItem({
       className={[
         'group relative flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-[13px] leading-[18px] tracking-[-0.25px] transition-colors max-md:h-11',
         isActive
-          ? 'bg-lb-rail-active font-medium text-lb-rail-ink'
+          ? 'bg-lb-rail-active/60 font-medium text-lb-rail-ink'
           : 'font-normal text-lb-rail-ink-2 hover:bg-lb-rail-active hover:text-lb-rail-ink',
       ].join(' ')}
     >

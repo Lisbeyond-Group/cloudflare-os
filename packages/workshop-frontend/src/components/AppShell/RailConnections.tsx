@@ -11,7 +11,7 @@ const CONNECTION_STATE_PRIORITY: Record<RailConnection['state'], number> = {
 
 export function RailLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="rail-label text-[10px] font-medium uppercase tracking-[0.16em] text-lb-rail-label">
+    <span className="rail-label text-[11px] font-medium tracking-[0.02em] text-lb-rail-label">
       {children}
     </span>
   )
@@ -110,7 +110,7 @@ export default function RailConnections({ collapsed = false }: { collapsed?: boo
             <div key={row.id} className="flex min-w-0 items-center gap-2 text-[12.5px] leading-4">
               <span className={connectionDotClass(row.state)} aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate text-lb-rail-ink-2">{row.name}</span>
-              <span className="max-w-[84px] truncate text-right text-lb-rail-muted">{row.detail}</span>
+              <span className="max-w-[84px] truncate text-right text-[11px] text-lb-rail-muted">{row.detail}</span>
             </div>
           ))}
         </div>

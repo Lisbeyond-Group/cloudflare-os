@@ -385,7 +385,7 @@ function SidebarSection({
   children: ReactNode
 }) {
   return (
-    <div className="mt-2 flex flex-col px-2">
+    <div className="mt-2 flex flex-col px-3">
       <button
         type="button"
         onClick={onToggle}
