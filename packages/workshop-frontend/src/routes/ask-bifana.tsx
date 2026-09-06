@@ -50,6 +50,8 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
 
   const [models, setModels] = useState<AiChatAuthorInfo[]>([])
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [modelLoadState, setModelLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [modelLoadAttempt, setModelLoadAttempt] = useState(0)
   const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null)
 
   useEffect(() => {
@@ -60,13 +62,17 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
 
   useEffect(() => {
     let cancelled = false
+    setModelLoadState('loading')
     authenticatedApi.listModels()
       .then((list) => {
         if (cancelled) return
         setModels(list)
         setSelectedModel(getStoredSelectedModel(list))
+        setModelLoadState('ready')
       })
       .catch((err) => {
+        if (cancelled) return
+        setModelLoadState('error')
         logRpcFailure('Failed to fetch models:', err)
         if (classifyRpcError(err) !== 'connection') {
           toasts.add({ title: "Couldn't load AI models", variant: 'error' })
@@ -75,7 +81,7 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
     return () => { cancelled = true }
     // `toasts` is deliberately not a dependency: useKumoToastManager returns a fresh object every
     // render, so including it refires this effect (and listModels) after its own setModels.
-  }, [authenticatedApi])
+  }, [authenticatedApi, modelLoadAttempt])
 
   const handleModelChange = useCallback((value: string | null) => {
     setSelectedModel(value)
@@ -173,10 +179,31 @@ export function AskBifanaPageContent({ prompt }: AskBifanaSearch) {
           minRows={3}
           seedText={seed?.text}
           seedNonce={seed?.nonce}
+          blockedReason={modelLoadState === 'loading'
+            ? 'Loading AI models…'
+            : modelLoadState === 'error'
+              ? 'AI models could not load.'
+              : undefined}
           draftStorageKey={currentUser
             ? composerDraftStorageKey(currentUser.id, 'ask-bifana')
             : undefined}
         />
+
+        {modelLoadState === 'error' && (
+          <div
+            className="flex items-center justify-center gap-2 text-[13px] text-kumo-subtle"
+            role="alert"
+          >
+            <span>AI models could not load.</span>
+            <button
+              type="button"
+              className="min-h-11 px-2 font-medium text-kumo-brand underline underline-offset-2 sm:min-h-10"
+              onClick={() => setModelLoadAttempt((attempt) => attempt + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         <section aria-labelledby="ask-examples-title">
           <h2 id="ask-examples-title" className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-kumo-subtle">

@@ -107,15 +107,14 @@ describe('sidebar chat groups', () => {
     const view = await renderLists()
 
     expect(view.textContent).not.toContain('Saved chats')
-    expect(view.querySelectorAll('[data-chat-row]')).toHaveLength(4)
+    expect(view.querySelectorAll('[data-chat-row]')).toHaveLength(3)
     expect([...view.querySelectorAll('[data-chat-row]')].map(row => row.textContent)).toEqual([
       'recent-0',
       'recent-1',
       'recent-2',
-      'recent-3',
     ])
     expect(view.querySelector<HTMLAnchorElement>('a[href="/workspaces"]')?.textContent)
-      .toContain('Show all (8)')
+      .toContain('All chats')
   })
 
   it('keeps every saved chat visible and separate from Recent without mutating state', async () => {
@@ -135,7 +134,6 @@ describe('sidebar chat groups', () => {
       'recent-newer',
       'recent-0',
       'recent-1',
-      'recent-2',
     ])
     expect(testState.openGadget).not.toHaveBeenCalled()
   })

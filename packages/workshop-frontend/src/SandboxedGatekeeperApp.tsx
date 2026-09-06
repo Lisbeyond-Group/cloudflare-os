@@ -6,6 +6,7 @@ import type { GatekeeperUiFrame } from '@gadgets/workshop-shared/gatekeeper'
 import type {
   GatekeeperAppTheme,
   GatekeeperAppThemeReceiver,
+  GatekeeperChatModelState,
 } from '@gadgets/workshop-shared/theme'
 import { isHexColor } from '@gadgets/workshop-shared/api'
 import { createRateLimitedCapability } from './rateLimitedCapability'
@@ -27,6 +28,7 @@ import {
   type GatekeeperAppWorkspaceTarget,
 } from './gatekeeperAppNavigation'
 import { useRailConnections } from './components/AppShell/railConnectionsContext'
+import { getStoredSelectedModel, persistSelectedModel } from './modelSelection'
 
 // The content-pane rect, in viewport coordinates, that the app pins its page to while the iframe
 // is full-viewport.
@@ -46,9 +48,12 @@ type ResolveWorkspaceTitles = (ids: string[]) => Promise<(string | null)[]>
 type OpenPrompt = (prompt: string) => void
 type OpenAppRoute = (route: GatekeeperAppRoute) => void
 type ReportConnections = (rows: GatekeeperAppConnection[]) => void
+type GetChatModelState = () => Promise<GatekeeperChatModelState>
+type SetChatModel = (modelId: string | null) => Promise<GatekeeperChatModelState>
 
 type OverlayState = 'full' | null
 const CONNECTIONS_FEATURE = { connections: true } as const
+const HOME_FEATURES = { connections: true, chatModels: true } as const
 
 // Upper bound on one workspace-title lookup, matching the app's page size.
 const MAX_RESOLVED_WORKSPACES = 100
@@ -97,6 +102,9 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #openAppRoute: OpenAppRoute
   readonly #resolveWorkspaceTitles: ResolveWorkspaceTitles
   readonly #reportConnections: ReportConnections
+  readonly #chatModelsEnabled: boolean
+  readonly #getChatModelState: GetChatModelState
+  readonly #setChatModel: SetChatModel
   #getWorkflowRouteState: () => WorkflowRouteState
   #setWorkflowRouteState: (state: WorkflowRouteState) => void
   #presenting = false
@@ -118,6 +126,9 @@ class GatekeeperAppHostImpl extends RpcTarget {
     openAppRoute: OpenAppRoute,
     resolveWorkspaceTitles: ResolveWorkspaceTitles,
     reportConnections: ReportConnections,
+    chatModelsEnabled: boolean,
+    getChatModelState: GetChatModelState,
+    setChatModel: SetChatModel,
     getWorkflowRouteState: () => WorkflowRouteState,
     setWorkflowRouteState: (state: WorkflowRouteState) => void,
   ) {
@@ -139,6 +150,9 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#openAppRoute = openAppRoute
     this.#resolveWorkspaceTitles = resolveWorkspaceTitles
     this.#reportConnections = reportConnections
+    this.#chatModelsEnabled = chatModelsEnabled
+    this.#getChatModelState = getChatModelState
+    this.#setChatModel = setChatModel
     this.#getWorkflowRouteState = getWorkflowRouteState
     this.#setWorkflowRouteState = setWorkflowRouteState
   }
@@ -194,6 +208,23 @@ class GatekeeperAppHostImpl extends RpcTarget {
 
   reportConnections(rows: unknown): void {
     this.#reportConnections(parseGatekeeperAppConnections(rows))
+  }
+
+  getChatModelState(): Promise<GatekeeperChatModelState> {
+    if (!this.#chatModelsEnabled) {
+      throw new TypeError('Chat model selection is unavailable for this app.')
+    }
+    return this.#getChatModelState()
+  }
+
+  setChatModel(modelId: string | null): Promise<GatekeeperChatModelState> {
+    if (!this.#chatModelsEnabled) {
+      throw new TypeError('Chat model selection is unavailable for this app.')
+    }
+    if (modelId !== null && typeof modelId !== 'string') {
+      throw new TypeError('Invalid chat model selection.')
+    }
+    return this.#setChatModel(modelId)
   }
 
   // The app calls this once to learn the current theme and register a receiver for later changes.
@@ -303,23 +334,25 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     ? configuredAccentColor
     : null
   const connectionsEnabled = gatekeeperAppCanReportConnections(gatekeeperVendorId)
+  const chatModelsEnabled = connectionsEnabled && appRoute === 'home'
+  const features = chatModelsEnabled ? HOME_FEATURES : connectionsEnabled ? CONNECTIONS_FEATURE : null
   const themeRef = useRef<GatekeeperAppTheme>({
     mode: resolvedThemeMode,
     accentColor,
-    ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+    ...(features ? { features } : {}),
   })
   themeRef.current = {
     mode: resolvedThemeMode,
     accentColor,
-    ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+    ...(features ? { features } : {}),
   }
   useEffect(() => {
     hostRef.current?.updateTheme({
       mode: resolvedThemeMode,
       accentColor,
-      ...(connectionsEnabled ? { features: CONNECTIONS_FEATURE } : {}),
+      ...(features ? { features } : {}),
     })
-  }, [resolvedThemeMode, accentColor, connectionsEnabled])
+  }, [resolvedThemeMode, accentColor, features])
 
   const acceptConnections = useCallback((rows: GatekeeperAppConnection[]) => {
     if (!connectionsEnabled) {
@@ -327,6 +360,26 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     }
     reportConnections(rows)
   }, [connectionsEnabled, reportConnections])
+
+  const loadChatModelState = useCallback<GetChatModelState>(async () => {
+    const models = await authenticatedApi.listModels()
+    return {
+      models: models.map(({ id, name }) => ({ id, name })),
+      selectedModelId: getStoredSelectedModel(models),
+    }
+  }, [authenticatedApi])
+
+  const setChatModel = useCallback<SetChatModel>(async (modelId) => {
+    const models = await authenticatedApi.listModels()
+    if (modelId !== null && !models.some((model) => model.id === modelId)) {
+      throw new TypeError('Invalid chat model selection.')
+    }
+    persistSelectedModel(modelId)
+    return {
+      models: models.map(({ id, name }) => ({ id, name })),
+      selectedModelId: modelId,
+    }
+  }, [authenticatedApi])
 
   const setOverlayPhase = useCallback((next: OverlayState) => {
     if (overlayRef.current === next) return
@@ -418,6 +471,9 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
         openAppRoute,
         resolveWorkspaceTitles,
         acceptConnections,
+        chatModelsEnabled,
+        loadChatModelState,
+        setChatModel,
         () => routeStateRef.current,
         setWorkflowRouteState,
       )
@@ -452,8 +508,9 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     }
     // Re-establish the session if either the HTML or the `ui` capability changes, so a new frame
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
-  }, [acceptConnections, appRoute, frame.iframeHtml, frame.ui, gatekeeperVendorId, openAppRoute,
-      openPrompt, openTarget, present, setWorkflowRouteState, resolveWorkspaceTitles, setOverlayPhase])
+  }, [acceptConnections, appRoute, chatModelsEnabled, frame.iframeHtml, frame.ui,
+      gatekeeperVendorId, loadChatModelState, openAppRoute, openPrompt, openTarget, present,
+      setChatModel, setWorkflowRouteState, resolveWorkspaceTitles, setOverlayPhase])
 
   return (
     <iframe
