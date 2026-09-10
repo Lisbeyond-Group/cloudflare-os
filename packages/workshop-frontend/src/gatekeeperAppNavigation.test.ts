@@ -145,6 +145,10 @@ describe("workflow URL state", () => {
   it("retains the bounded pending invoice deep link and drops unrelated state", () => {
     expect(parseWorkflowRouteState({ workflow: "renovations-invoice-intake", tab: "invoices", status: "awaiting_approval", item: "item-123_abc", token: "private", url: "https://evil.example" })).toEqual({ workflow: "renovations-invoice-intake", tab: "invoices", status: "awaiting_approval", item: "item-123_abc" });
   });
+  it.each(["to_review", "decided", "needs_help"] as const)("retains the reviewed invoice view %s", status => {
+    expect(parseWorkflowRouteState({ workflow: "renovations-invoice-intake", tab: "invoices", status }))
+      .toEqual({ workflow: "renovations-invoice-intake", tab: "invoices", status });
+  });
   it("drops invalid, oversized and array values without accepting another path", () => {
     expect(parseWorkflowRouteState({ workflow: "../../settings", tab: "admin", status: ["approved"], item: "x".repeat(201) })).toEqual({});
     expect(parseWorkflowRouteState(null)).toEqual({});

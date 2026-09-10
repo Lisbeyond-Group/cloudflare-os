@@ -121,7 +121,8 @@ export function parseGatekeeperAppRoute(value: unknown): GatekeeperAppRoute {
 export type WorkflowRouteState = {
   workflow?: string;
   tab?: "invoices" | "overview" | "activity" | "about";
-  status?: "all" | "awaiting_approval" | "approved" | "handed_off" | "rejected" | "needs_human";
+  status?: "to_review" | "decided" | "needs_help" | "all" | "awaiting_approval" |
+    "approved" | "handed_off" | "rejected" | "needs_human";
   item?: string;
 };
 
@@ -131,7 +132,10 @@ export function parseWorkflowRouteState(value: unknown): WorkflowRouteState {
   const state: WorkflowRouteState = {};
   if (typeof value.workflow === "string" && /^[a-z0-9][a-z0-9-]{0,99}$/.test(value.workflow)) state.workflow = value.workflow;
   if (typeof value.tab === "string" && ["invoices", "overview", "activity", "about"].includes(value.tab)) state.tab = value.tab as WorkflowRouteState["tab"];
-  if (typeof value.status === "string" && ["all", "awaiting_approval", "approved", "handed_off", "rejected", "needs_human"].includes(value.status)) state.status = value.status as WorkflowRouteState["status"];
+  if (typeof value.status === "string" && ["to_review", "decided", "needs_help", "all",
+    "awaiting_approval", "approved", "handed_off", "rejected", "needs_human"].includes(value.status)) {
+    state.status = value.status as WorkflowRouteState["status"];
+  }
   if (typeof value.item === "string" && /^[a-zA-Z0-9_-]{1,200}$/.test(value.item)) state.item = value.item;
   return state;
 }
