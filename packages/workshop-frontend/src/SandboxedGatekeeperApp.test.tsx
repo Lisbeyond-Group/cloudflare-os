@@ -73,6 +73,8 @@ interface TestHost extends RpcTarget {
   getPropertyRouteState(): Promise<Record<string, unknown>>;
   setPropertyRouteState(state: unknown, mode: unknown): Promise<void>;
   openAppRoute(route: string): Promise<void>;
+  openPropertyGuide(pNumber: unknown): Promise<void>;
+  openGuideSource(url: unknown): Promise<void>;
   reportConnections(rows: unknown): Promise<void>;
   getChatModelState(): Promise<GatekeeperChatModelState>;
   setChatModel(modelId: string | null): Promise<GatekeeperChatModelState>;
@@ -111,6 +113,50 @@ describe("SandboxedGatekeeperApp navigation", () => {
     container?.remove();
     vi.restoreAllMocks();
     window.localStorage.clear();
+  });
+
+  it("opens exact guide sources and acknowledges cross-page guide navigation before teardown", async () => {
+    const external = vi.spyOn(window, "open").mockReturnValue(null);
+    const frame = { iframeHtml: "<!doctype html><title>Onboarding</title>", ui: new RpcStub(new EmptyUi()) } as unknown as GatekeeperUiFrame;
+    const rootRoute = createRootRoute({ component: Outlet });
+    const workflows = createRoute({ getParentRoute: () => rootRoute, path: "/workflows", component: () => <RailConnectionsProvider><SandboxedGatekeeperApp frame={frame} gatekeeperVendorId="lisbeyond" appRoute="workflows" /></RailConnectionsProvider> });
+    const properties = createRoute({ getParentRoute: () => rootRoute, path: "/properties", validateSearch: parsePropertyRouteState, component: () => <p>Property guide</p> });
+    const router = createRouter({ history: createMemoryHistory({ initialEntries: ["/workflows?workflow=property-onboarding"] }), routeTree: rootRoute.addChildren([workflows, properties]) });
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+    const iframe = container.querySelector("iframe")!;
+    const { port1, port2 } = new MessageChannel(); host = newMessagePortRpcSession<TestHost>(port1);
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "handshake" }, origin: "null", source: iframe.contentWindow, ports: [port2] }));
+    await host.openGuideSource("https://www.notion.so/fixture-revision");
+    expect(external).toHaveBeenCalledWith("https://www.notion.so/fixture-revision", "_blank", "noopener,noreferrer");
+    await expect(host.openGuideSource("https://evil.test")).rejects.toThrow("Invalid guide source link");
+    expect(external).toHaveBeenCalledTimes(1);
+    await expect(host.openPropertyGuide("P9004&tab=activity")).rejects.toThrow("Invalid property guide target");
+    await act(async () => {
+      await host!.openPropertyGuide("P9004");
+      await vi.waitFor(() => expect(router.state.location.pathname).toBe("/properties"));
+    });
+    expect(router.state.location.search).toEqual({ property: "P9004", tab: "guide" });
+    expect(container.querySelector("iframe")).toBeNull();
+    await act(async () => router.history.back());
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/workflows"));
+    expect(router.state.location.search).toEqual({ workflow: "property-onboarding" });
+  });
+
+  it("does not grant guide destinations to another gatekeeper", async () => {
+    const external = vi.spyOn(window, "open").mockReturnValue(null);
+    const frame = { iframeHtml: "<!doctype html><title>Other app</title>", ui: new RpcStub(new EmptyUi()) } as unknown as GatekeeperUiFrame;
+    const rootRoute = createRootRoute({ component: () => <RailConnectionsProvider><SandboxedGatekeeperApp frame={frame} gatekeeperVendorId="other" appRoute="workflows" /></RailConnectionsProvider> });
+    const workflows = createRoute({ getParentRoute: () => rootRoute, path: "/workflows" });
+    const router = createRouter({ history: createMemoryHistory({ initialEntries: ["/workflows"] }), routeTree: rootRoute.addChildren([workflows]) });
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+    const iframe = container.querySelector("iframe")!;
+    const { port1, port2 } = new MessageChannel(); host = newMessagePortRpcSession<TestHost>(port1);
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "handshake" }, origin: "null", source: iframe.contentWindow, ports: [port2] }));
+    await expect(host.openPropertyGuide("P9004")).rejects.toThrow("Guide navigation is unavailable");
+    await expect(host.openGuideSource("https://www.notion.so/fixture")).rejects.toThrow("Guide navigation is unavailable");
+    expect(external).not.toHaveBeenCalled();
   });
 
   it("reads and updates bounded workflow URL state over the real host RPC", async () => {

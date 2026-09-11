@@ -141,6 +141,28 @@ export function parseWorkflowRouteState(value: unknown): WorkflowRouteState {
 }
 
 const PROPERTY_TABS = new Set(["overview", "guide", "operations", "activity"]);
+
+/** Exact property identity for a cross-page guide link; navigation conveys no read authority. */
+export function parsePropertyGuideTarget(value: unknown): string {
+  if (typeof value !== "string" || !/^P\d{4}$/.test(value)) {
+    throw new TypeError("Invalid property guide target.");
+  }
+  return value;
+}
+
+/** Only the existing governed guide/review destinations may escape the app frame. */
+export function parseGuideSourceUrl(value: unknown): string {
+  if (typeof value !== "string" || value.length > 2000) throw new TypeError("Invalid guide source link.");
+  let url: URL;
+  try { url = new URL(value); } catch { throw new TypeError("Invalid guide source link."); }
+  const notion = ["notion.so", "www.notion.so", "notion.com", "www.notion.com", "app.notion.com"].includes(url.hostname);
+  const slack = (url.hostname === "slack.com" || /^[a-z0-9-]+\.slack\.com$/.test(url.hostname))
+    && /^\/archives\/[CG][A-Z0-9]{8,}\/p\d+$/.test(url.pathname);
+  if (url.protocol !== "https:" || url.username || url.password || url.port || (!notion && !slack)) {
+    throw new TypeError("Invalid guide source link.");
+  }
+  return url.href;
+}
 const PROPERTY_SERVICES = new Set(["property_management", "upkeep"]);
 const PROPERTY_STATUSES = new Set(["active", "onboarding", "prospect", "inactive", "attention", "offboarding", "unknown"]);
 
