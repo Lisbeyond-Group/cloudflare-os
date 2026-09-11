@@ -10,10 +10,27 @@ import {
   parseGatekeeperAppRoute,
   parseWorkflowRouteState,
   parsePropertyRouteState,
+  parsePropertyGuideTarget,
+  parseGuideSourceUrl,
   parseGatekeeperAppWorkspaceTarget,
 } from "./gatekeeperAppNavigation";
 
 const WORKSPACE_ID = "a".repeat(64);
+
+describe("guide navigation targets", () => {
+  it("accepts canonical property identity only", () => {
+    expect(parsePropertyGuideTarget("P9004")).toBe("P9004");
+    for (const value of [null, {}, "p9004", "P9004/../admin", "P9004&P9005", "P12345", "Avenida apartment"]) {
+      expect(() => parsePropertyGuideTarget(value)).toThrow("Invalid property guide target");
+    }
+  });
+  it.each(["https://www.notion.so/fixture-guide", "https://app.notion.com/fixture-revision", "https://slack.com/archives/C12345678/p1780000000000000", "https://lisbeyond.slack.com/archives/C12345678/p1780000000000000"])("accepts a governed source %s", value => {
+    expect(parseGuideSourceUrl(value)).toBe(value);
+  });
+  it.each([null, {}, "javascript:alert(1)", "http://www.notion.so/page", "https://notion.so.evil.test/page", "https://evil.test/page", "https://user@notion.so/page", "https://notion.so:8443/page", "https://slack.com/redirect?url=https://evil.test", "https://www.notion.so/" + "x".repeat(2000)])("rejects an unsupported source %s", value => {
+    expect(() => parseGuideSourceUrl(value)).toThrow("Invalid guide source link");
+  });
+});
 
 const VALID_CONNECTION = {
   id: "hostaway",

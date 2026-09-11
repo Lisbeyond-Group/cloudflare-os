@@ -23,6 +23,8 @@ import {
   parseGatekeeperAppConnections,
   parseGatekeeperAppRoute,
   parsePropertyRouteState,
+  parsePropertyGuideTarget,
+  parseGuideSourceUrl,
   parseWorkflowRouteState,
   type WorkflowRouteState,
   parseGatekeeperAppWorkspaceTarget,
@@ -107,6 +109,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
   readonly #openPrompt: OpenPrompt
   readonly #appRoute: string | null
   readonly #openAppRoute: OpenAppRoute
+  readonly #openPropertyGuide: (pNumber: string) => void
+  readonly #guideNavigationEnabled: boolean
   readonly #resolveWorkspaceTitles: ResolveWorkspaceTitles
   readonly #reportConnections: ReportConnections
   readonly #chatModelsEnabled: boolean
@@ -143,6 +147,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     setWorkflowRouteState: (state: WorkflowRouteState) => void,
     getPropertyRouteState: () => GatekeeperAppPropertyRouteState,
     setPropertyRouteState: SetPropertyRouteState,
+    openPropertyGuide: (pNumber: string) => void,
+    guideNavigationEnabled: boolean,
   ) {
     super()
     this.#theme = theme
@@ -169,6 +175,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#setWorkflowRouteState = setWorkflowRouteState
     this.#getPropertyRouteState = getPropertyRouteState
     this.#setPropertyRouteState = setPropertyRouteState
+    this.#openPropertyGuide = openPropertyGuide
+    this.#guideNavigationEnabled = guideNavigationEnabled
   }
 
   get ui(): RpcStub<RpcTarget> {
@@ -209,6 +217,23 @@ class GatekeeperAppHostImpl extends RpcTarget {
 
   openAppRoute(route: unknown): void {
     this.#openAppRoute(parseGatekeeperAppRoute(route))
+  }
+
+  // Keep the frame opaque: the host owns these bounded, user-facing destinations.
+  openPropertyGuide(value: unknown): void {
+    if (!this.#guideNavigationEnabled) throw new TypeError("Guide navigation is unavailable here.")
+    const pNumber = parsePropertyGuideTarget(value)
+    // Acknowledge before navigation tears down the calling frame, as with property tab changes.
+    if (this.#propertyNavigationTimer !== null) clearTimeout(this.#propertyNavigationTimer)
+    this.#propertyNavigationTimer = setTimeout(() => {
+      this.#propertyNavigationTimer = null
+      this.#openPropertyGuide(pNumber)
+    }, 0)
+  }
+
+  openGuideSource(value: unknown): void {
+    if (!this.#guideNavigationEnabled) throw new TypeError("Guide navigation is unavailable here.")
+    window.open(parseGuideSourceUrl(value), "_blank", "noopener,noreferrer")
   }
 
   getWorkflowRouteState(): WorkflowRouteState {
@@ -487,6 +512,9 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
   const openAppRoute = useCallback<OpenAppRoute>((route) => {
     navigate({ to: GATEKEEPER_APP_ROUTES[route] })
   }, [navigate])
+  const openPropertyGuide = useCallback((pNumber: string) => {
+    void navigate({ to: "/properties", search: { property: pNumber, tab: "guide" } })
+  }, [navigate])
   // The gatekeeper capability is `any`: its method shape is gatekeeper-defined and opaque to us.
   const capabilityRef = useRef<any>(null)
   capabilityRef.current = frame.ui
@@ -528,6 +556,8 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
         setWorkflowRouteState,
         () => propertyRouteStateRef.current,
         setPropertyRouteState,
+        openPropertyGuide,
+        gatekeeperVendorId === "lisbeyond",
       )
       hostRef.current = host
       sessionRef.current = newMessagePortRpcSession(port, host)
@@ -561,7 +591,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId, appR
     // Re-establish the session if either the HTML or the `ui` capability changes, so a new frame
     // carrying a fresh stub (even with identical HTML) never keeps talking through the stale one.
   }, [acceptConnections, appRoute, chatModelsEnabled, frame.iframeHtml, frame.ui,
-      gatekeeperVendorId, loadChatModelState, openAppRoute, openPrompt, openTarget, present,
+      gatekeeperVendorId, loadChatModelState, openAppRoute, openPropertyGuide, openPrompt, openTarget, present,
       propertyRouteStateKey, setChatModel, setPropertyRouteState, setWorkflowRouteState,
       resolveWorkspaceTitles, setOverlayPhase])
 
